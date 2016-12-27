@@ -22,6 +22,10 @@ impl Expr {
     fn minus(left: Expr, right: Expr) -> Expr {
         Expr::Minus(left.boxed(), right.boxed())
     }
+
+    fn times(left: Expr, right: Expr) -> Expr {
+        Expr::Times(left.boxed(), right.boxed())
+    }
 }
 
 pub fn parse(input: &Vec<Token>) -> Expr {

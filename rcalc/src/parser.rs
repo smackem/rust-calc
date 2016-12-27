@@ -18,6 +18,10 @@ impl Expr {
     fn plus(left: Expr, right: Expr) -> Expr {
         Expr::Plus(left.boxed(), right.boxed())
     }
+
+    fn minus(left: Expr, right: Expr) -> Expr {
+        Expr::Minus(left.boxed(), right.boxed())
+    }
 }
 
 pub fn parse(input: &Vec<Token>) -> Expr {

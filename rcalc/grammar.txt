@@ -1,0 +1,21 @@
+term:
+    product-list
+
+product-list:
+    product '+' product-list
+    product '-' product-list
+    product
+
+product:
+    atom-list
+
+atom-list:
+    atom '*' atom-list
+    atom '/' atom-list
+    atom '%' atom-list
+    atom
+
+atom:
+    INTEGER
+    IDENTIFIER
+    '(' term ')'

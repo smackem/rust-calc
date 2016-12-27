@@ -10,28 +10,35 @@ pub enum Expr {
     Integer(i32),
 }
 
+pub fn parse(input: &Vec<Token>) -> Expr {
+    Expr::Plus(Expr::Integer(100).boxed(), Expr::Integer(50).boxed())
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
 impl Expr {
     fn boxed(self) -> Box<Self> {
         Box::new(self)
     }
-
-    fn plus(left: Expr, right: Expr) -> Expr {
-        Expr::Plus(left.boxed(), right.boxed())
-    }
-
-    fn minus(left: Expr, right: Expr) -> Expr {
-        Expr::Minus(left.boxed(), right.boxed())
-    }
-
-    fn times(left: Expr, right: Expr) -> Expr {
-        Expr::Times(left.boxed(), right.boxed())
-    }
-
-    fn div(left: Expr, right: Expr) -> Expr {
-        Expr::Div(left.boxed(), right.boxed())
-    }
 }
 
-pub fn parse(input: &Vec<Token>) -> Expr {
-    Expr::plus(Expr::Integer(100), Expr::Integer(50))
+struct Parser {
+    input: Vec<Token>,
+    index: usize,
+}
+
+impl Parser {
+    fn next(&mut self) -> &Token {
+        let token = &self.input[self.index];
+        self.index = self.index + 1;
+        token
+    }
+
+    fn current(&self) -> &Token {
+        &self.input[self.index]
+    }
+
+    fn parseTerm(&mut self) -> Expr {
+        Expr::Integer(100)
+    }
 }

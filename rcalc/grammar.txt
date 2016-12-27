@@ -1,18 +1,12 @@
 term:
-    product-list
-
-product-list:
-    product '+' product-list
-    product '-' product-list
+    product '+' term
+    product '-' term
     product
 
 product:
-    atom-list
-
-atom-list:
-    atom '*' atom-list
-    atom '/' atom-list
-    atom '%' atom-list
+    atom '*' product
+    atom '/' product
+    atom '%' product
     atom
 
 atom:

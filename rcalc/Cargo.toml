@@ -1,0 +1,6 @@
+[package]
+name = "rcalc"
+version = "0.1.0"
+authors = ["lok90246"]
+
+[dependencies]

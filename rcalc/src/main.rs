@@ -1,12 +1,11 @@
 mod lexer;
 mod parser;
 
-use std::io;
 use lexer::Token;
 
 fn main() {
-    let input = vec![Token::Integer(100), Token::Plus, Token::Integer(50)];
+    let input = vec![Token::Integer(120), Token::Plus, Token::Integer(50)];
+    let expr = parser::parse(&input);
 
-    let x = Token::Ident("abc".to_string());
-    println!("Hello, world!");
+    println!("Hello, world: {:?}", expr);
 }

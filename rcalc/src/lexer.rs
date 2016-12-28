@@ -1,3 +1,5 @@
+#[derive(Debug)]
+#[derive(PartialEq)]
 pub enum Token {
     LParen,
     RParen,
@@ -8,4 +10,5 @@ pub enum Token {
     Percent,
     Integer(i32),
     Ident(String),
+    Eof,
 }

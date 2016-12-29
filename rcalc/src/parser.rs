@@ -1,7 +1,6 @@
 use lexer::Token;
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum Expr {
     Plus(Box<Expr>, Box<Expr>),
     Minus(Box<Expr>, Box<Expr>),
@@ -33,7 +32,7 @@ struct Parser<'a> {
 }
 
 impl<'a> Parser<'a> {
-    fn next(&mut self) -> &Token {
+    fn next<'s>(&'s mut self) -> &'a Token {
         if self.index >= self.input.len() {
             &EOF
         } else {
@@ -43,21 +42,24 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn current(&self) -> &Token {
-        if self.index >= self.input.len() {
-            &EOF
-        } else {
-            &self.input[self.index]
-        }
+    fn current<'s>(&'s self) -> &'a Token {
+        let token =
+            if self.index >= self.input.len() {
+                &EOF
+            } else {
+                &self.input[self.index]
+            };
+        println!("current: {:?}", token);
+        token
     }
 
-    fn expect(&mut self, token: Token) {
-        if *self.next() != token {
+    fn assert_current<'s>(&'s mut self, token: Token) {
+        if token != *self.current() {
             panic!("Expected {:?}", token);
         }
     }
 
-    fn parse_term(&mut self) -> Expr {
+    fn parse_term<'s>(&'s mut self) -> Expr {
         let left = self.parse_product();
 
         match *self.current() {
@@ -73,7 +75,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_product(&mut self) -> Expr {
+    fn parse_product<'s>(&'s mut self) -> Expr {
         let left = self.parse_atom();
 
         match *self.current() {
@@ -93,10 +95,16 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_atom(&mut self) -> Expr {
+    fn parse_atom<'s>(&'s mut self) -> Expr {
         let expr = match *self.current() {
             Token::Integer(n) => Expr::Integer(n),
             Token::Ident(ref s) => Expr::Ident(s.clone()),
+            Token::LParen => {
+                self.next();
+                let inner = self.parse_term();
+                self.assert_current(Token::RParen);
+                inner
+            },
             _ => panic!("Expected atom"),
         };
 

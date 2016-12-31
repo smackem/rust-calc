@@ -11,18 +11,18 @@ pub enum Expr {
     Integer(i32),
 }
 
-pub fn parse(input: &Vec<Token>) -> Expr {
-    let mut parser = Parser { input: input, index: 0 };
-    parser.parse_term()
-}
-
-///////////////////////////////////////////////////////////////////////////////
-
 impl Expr {
-    fn boxed(self) -> Box<Self> {
+    pub fn boxed(self) -> Box<Self> {
         Box::new(self)
     }
 }
+
+pub fn parse(input: &Vec<Token>) -> Expr {
+    let mut parser = Parser { input: input, index: 0 };
+    parser.parse_expr()
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 static EOF: Token = Token::Eof;
 
@@ -57,6 +57,12 @@ impl<'a> Parser<'a> {
         if token != *self.current() {
             panic!("Expected {:?}", token);
         }
+    }
+
+    fn parse_expr<'s>(&'s mut self) -> Expr {
+        let expr = self.parse_term();
+        self.assert_current(Token::Eof);
+        expr
     }
 
     fn parse_term<'s>(&'s mut self) -> Expr {
@@ -110,5 +116,82 @@ impl<'a> Parser<'a> {
 
         self.next();
         expr
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use lexer::Token;
+
+    #[test]
+    fn test_parse_atom() { // 1
+        let input = vec![Token::Integer(1)];
+        let expr = parse(&input);
+        assert_eq!(expr, Expr::Integer(1));
+    }
+
+    #[test]
+    fn test_parse_simple() { // 1 + 2
+        let input = vec![Token::Integer(1), Token::Plus, Token::Integer(2)];
+        let expr = parse(&input);
+        assert_eq!(expr, Expr::Plus(Expr::Integer(1).boxed(), Expr::Integer(2).boxed()));
+    }
+
+    #[test]
+    fn test_parse_complex() { // (1 + 2) * (5 - x)
+        let input = vec![
+            Token::LParen, Token::Integer(1), Token::Plus, Token::Integer(2), Token::RParen,
+            Token::Star,
+            Token::LParen, Token::Integer(5), Token::Minus, Token::Ident("x".to_string()), Token::RParen];
+        let expr = parse(&input);
+        assert_eq!(expr,
+            Expr::Times(
+                Expr::Plus(Expr::Integer(1).boxed(), Expr::Integer(2).boxed()).boxed(),
+                Expr::Minus(Expr::Integer(5).boxed(), Expr::Ident("x".to_string()).boxed()).boxed()));
+    }
+
+    #[test]
+    fn test_parse_multi_parens() { // (((1)) + (2))
+        let input = vec![
+            Token::LParen, Token::LParen, Token::LParen, Token::Integer(1), Token::RParen, Token::RParen,
+            Token::Plus, Token::LParen, Token::Integer(2), Token::RParen, Token::RParen];
+        let expr = parse(&input);
+        assert_eq!(expr, Expr::Plus(Expr::Integer(1).boxed(), Expr::Integer(2).boxed()));
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_fail_1() { // *
+        let input = vec![Token::Star];
+        parse(&input);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_fail_2() { // + 1
+        let input = vec![Token::Plus, Token::Integer(1)];
+        parse(&input);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_fail_3() { // 1 + -
+        let input = vec![Token::Integer(1), Token::Plus, Token::Minus];
+        parse(&input);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_fail_4() { // 1 + )
+        let input = vec![Token::Integer(1), Token::Plus, Token::RParen];
+        parse(&input);
+    }
+
+    #[test]
+    #[should_panic]
+    fn test_parse_fail_5() { // (1 + 2
+        let input = vec![Token::LParen, Token::Integer(1), Token::Plus, Token::Integer(2)];
+        parse(&input);
     }
 }

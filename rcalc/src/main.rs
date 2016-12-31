@@ -1,18 +1,25 @@
+extern crate regex;
+#[macro_use] extern crate lazy_static;
+
 mod lexer;
 mod parser;
+mod interpreter;
 
-use lexer::Token;
+use std::collections::HashMap;
 
 fn main() {
-    let input = vec![
-        Token::LParen,
-        Token::Integer(120),
-        Token::Plus,
-        Token::Integer(50),
-        Token::RParen,
-        Token::Star,
-        Token::Integer(3)];
-    let expr = parser::parse(&input);
+    let input = lexer::lex("1 + 2 * (3 - 2) + a - b");
+    println!("Tokens: {:?}", input);
 
-    println!("Hello, world: {:?}", expr);
+    let expr = parser::parse(&input);
+    println!("Ast: {:?}", expr);
+
+    let ctx = {
+        let mut map: HashMap<String, i32> = HashMap::new();
+        map.insert("a".to_string(), 1);
+        map.insert("b".to_string(), 2);
+        interpreter::context_from_hashmap(map)
+    };
+    let res = interpreter::interpret(&expr, &*ctx);
+    println!("Result: {}", res);
 }

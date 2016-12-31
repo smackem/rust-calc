@@ -1,6 +1,8 @@
 [package]
 name = "rcalc"
 version = "0.1.0"
-authors = ["lok90246"]
+authors = ["smackem"]
 
 [dependencies]
+regex = "0.1"
+lazy_static = "0.2.2"

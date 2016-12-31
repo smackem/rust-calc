@@ -1,3 +1,6 @@
+expr:
+    term
+
 term:
     product '+' term
     product '-' term

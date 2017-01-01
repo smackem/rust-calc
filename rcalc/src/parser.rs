@@ -1,5 +1,6 @@
 use lexer::Token;
 
+/// Defines the syntax elements that make up the AST.
 #[derive(Debug, PartialEq)]
 pub enum Expr {
     Plus(Box<Expr>, Box<Expr>),
@@ -12,17 +13,27 @@ pub enum Expr {
 }
 
 impl Expr {
+    /// Convenience method that returns a `Box` containing the `Expr`.
     pub fn boxed(self) -> Box<Self> {
         Box::new(self)
     }
 }
 
+/// Parses the given input and returns the AST.
+///
+/// # Examples
+///
+/// ```
+/// let input = vec![Token::Integer(1)];
+/// let expr = parse(&input);
+/// assert_eq!(expr, Expr::Integer(1));
+/// ```
 pub fn parse(input: &Vec<Token>) -> Expr {
     let mut parser = Parser { input: input, index: 0 };
     parser.parse_expr()
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// ============================================================================
 
 static EOF: Token = Token::Eof;
 

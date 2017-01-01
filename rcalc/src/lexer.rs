@@ -1,5 +1,6 @@
 use regex::Regex;
 
+/// Defines the terminals that can be lexed.
 #[derive(Debug, PartialEq)]
 pub enum Token {
     LParen,
@@ -14,6 +15,14 @@ pub enum Token {
     Eof,
 }
 
+/// Tokenizes the given input string and returns a vector of `Token`s.
+/// 
+/// # Examples
+/// 
+/// ```
+/// let tokens = lex("1 + 2");
+/// assert_eq!(tokens, vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
+/// ```
 pub fn lex(input: &str) -> Vec<Token> {
     let map = token_map();
     let mut tokens = Vec::new();
@@ -37,7 +46,7 @@ pub fn lex(input: &str) -> Vec<Token> {
     tokens
 }
 
-///////////////////////////////////////////////////////////////////////////////
+// ============================================================================
 
 fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
     let create_regex = |s| Regex::new(s).unwrap();

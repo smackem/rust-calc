@@ -38,7 +38,7 @@ pub fn lex(input: &str) -> Vec<Token> {
             if let Some((0, len)) = regex.find(input_slice) {
                 let token = f(&input_slice[0..len]);
                 tokens.push(token);
-                index = index + len;
+                index += len;
                 continue 'outer;
             }
         }

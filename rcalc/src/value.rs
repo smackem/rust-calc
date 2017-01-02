@@ -26,7 +26,7 @@ impl Value {
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(Value::Integer(12).to_float(), Value::Float(12.0))
+    /// assert_eq!(Value::Integer(12).to_float(), Value::Float(12.0));
     /// ```
     pub fn to_float(&self) -> f64 {
         match *self {
@@ -41,7 +41,7 @@ impl Value {
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(Value::Float(12.3).to_integer(), Value::Integer(12))
+    /// assert_eq!(Value::Float(12.3).to_integer(), Value::Integer(12));
     /// ```
     pub fn to_integer(&self) -> i64 {
         match *self {
@@ -56,7 +56,7 @@ impl Value {
     /// # Examples
     ///
     /// ```
-    /// assert_eq!(Value::Float(12.3).integer_divide_by(&Value::Integer(3)), Value::Integer(4))
+    /// assert_eq!(Value::Float(12.3).integer_divide_by(&Value::Integer(3)), Value::Integer(4));
     /// ```
     pub fn integer_divide_by(&self, other: &Value) -> Value {
         Value::Integer(self.to_integer() / other.to_integer())
@@ -66,6 +66,13 @@ impl Value {
 impl Add for Value {
     type Output = Value;
 
+    /// Adds to `Value`s.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(1) + Value::Integer(2), Value::Integer(3));
+    /// ```
     fn add(self, other: Value) -> Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Value::Integer(a + b),
@@ -77,6 +84,13 @@ impl Add for Value {
 impl Sub for Value {
     type Output = Value;
 
+    /// Subtracts `Value` `other` from `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(1) - Value::Integer(2), Value::Integer(-1));
+    /// ```
     fn sub(self, other: Value) -> Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Value::Integer(a - b),
@@ -88,6 +102,13 @@ impl Sub for Value {
 impl Mul for Value {
     type Output = Value;
 
+    /// Multiplies two `Value`s
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(2) * Value::Integer(3), Value::Integer(6));
+    /// ```
     fn mul(self, other: Value) -> Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Value::Integer(a * b),
@@ -99,6 +120,13 @@ impl Mul for Value {
 impl Div for Value {
     type Output = Value;
 
+    /// Divides `Value` `self` by `other`, always returning a `Float`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(6) / Value::Integer(2), Value::Float(3.0));
+    /// ```
     fn div(self, other: Value) -> Value {
         Value::Float(self.to_float() / other.to_float())
     }
@@ -107,6 +135,13 @@ impl Div for Value {
 impl Rem for Value {
     type Output = Value;
 
+    /// Divides `Value` `self` by `other`, returning the remainder.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(5) / Value::Integer(2), Value::Integer(1));
+    /// ```
     fn rem(self, other: Value) -> Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Value::Integer(a % b),
@@ -114,6 +149,8 @@ impl Rem for Value {
         }
     }
 }
+
+// ===========================================================================
 
 #[cfg(test)]
 mod tests {

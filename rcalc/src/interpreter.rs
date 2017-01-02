@@ -13,7 +13,7 @@ use value::Value;
 /// let res = interpret(&expr, &*ctx());
 /// assert_eq!(res, Value::Integer(1));
 /// ```
-pub fn interpret(expr: &Expr, ctx: &Context) -> Value {
+pub fn interpret(expr: &Expr, ctx: &mut Context) -> Value {
     match *expr {
         Expr::Plus(ref left, ref right) => interpret(&*left, ctx) + interpret(&*right, ctx),
         Expr::Minus(ref left, ref right) => interpret(&*left, ctx) - interpret(&*right, ctx),
@@ -76,7 +76,7 @@ mod tests {
     fn test_interpret_simple() {
         // 1
         let expr = integer_expr(1);
-        let res = interpret(&expr, &*ctx());
+        let res = interpret(&expr, &mut *ctx());
         assert_eq!(res, Value::Integer(1));
     }
 
@@ -84,7 +84,7 @@ mod tests {
     fn test_interpret_term() {
         // 1 + 2
         let expr = Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed());
-        let res = interpret(&expr, &*ctx());
+        let res = interpret(&expr, &mut *ctx());
         assert_eq!(res, Value::Integer(3));
     }
 
@@ -94,7 +94,7 @@ mod tests {
         let expr =
             Expr::Times(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed()).boxed(),
                         Expr::Minus(integer_expr(5).boxed(), float_expr(3.0).boxed()).boxed());
-        let res = interpret(&expr, &*ctx());
+        let res = interpret(&expr, &mut *ctx());
         assert_eq!(res, Value::Float(6.0));
     }
 }

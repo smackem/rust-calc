@@ -14,20 +14,19 @@ use std::io::Write;
 use value::Value;
 
 fn main() {
-    let ctx = {
+    let mut ctx = {
         let mut map: HashMap<String, Value> = HashMap::new();
-        map.insert("a".to_string(), Value::Integer(1));
-        map.insert("b".to_string(), Value::Integer(2));
+        map.insert("it".to_string(), Value::Integer(0));
         interpreter::context_from_hashmap(map)
     };
 
     loop {
         print!("> ");
-        io::stdout().flush().expect("");
+        io::stdout().flush().expect("stdout error");
 
         let line = {
             let mut buf = String::new();
-            io::stdin().read_line(&mut buf).expect("stdin failure");
+            io::stdin().read_line(&mut buf).expect("stdin error");
             buf
         };
 
@@ -35,14 +34,15 @@ fn main() {
             "#q" => break,
             "" => (),
             line => {
-                let res = eval(line, &*ctx);
+                let res = eval(line, &mut *ctx);
+                ctx.put("it", res);
                 println!("= {:?}", res);
             }
         }
     }
 }
 
-fn eval(line: &str, ctx: &interpreter::Context) -> Value {
+fn eval(line: &str, ctx: &mut interpreter::Context) -> Value {
     let input = lexer::lex(&line);
     println!("Tokens: {:?}", input);
 

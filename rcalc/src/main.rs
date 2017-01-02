@@ -1,19 +1,23 @@
 extern crate regex;
-#[macro_use] extern crate lazy_static;
+#[macro_use]
+extern crate lazy_static;
 
 mod lexer;
 mod parser;
+mod value;
 mod interpreter;
 
 use std::collections::HashMap;
 use std::io;
 use std::io::Write;
 
+use value::Value;
+
 fn main() {
     let ctx = {
-        let mut map: HashMap<String, i32> = HashMap::new();
-        map.insert("a".to_string(), 1);
-        map.insert("b".to_string(), 2);
+        let mut map: HashMap<String, Value> = HashMap::new();
+        map.insert("a".to_string(), Value::Integer(1));
+        map.insert("b".to_string(), Value::Integer(2));
         interpreter::context_from_hashmap(map)
     };
 
@@ -32,13 +36,13 @@ fn main() {
             "" => (),
             line => {
                 let res = eval(line, &*ctx);
-                println!("= {}", res);
-            },
+                println!("= {:?}", res);
+            }
         }
     }
 }
 
-fn eval(line: &str, ctx: &interpreter::Context) -> i32 {
+fn eval(line: &str, ctx: &interpreter::Context) -> Value {
     let input = lexer::lex(&line);
     println!("Tokens: {:?}", input);
 

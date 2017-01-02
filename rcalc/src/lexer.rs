@@ -9,16 +9,18 @@ pub enum Token {
     Minus,
     Star,
     Slash,
+    Backslash,
     Percent,
-    Integer(i32),
+    Integer(i64),
+    Float(f64),
     Ident(String),
     Eof,
 }
 
 /// Tokenizes the given input string and returns a vector of `Token`s.
-/// 
+///
 /// # Examples
-/// 
+///
 /// ```
 /// let tokens = lex("1 + 2");
 /// assert_eq!(tokens, vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
@@ -50,16 +52,17 @@ pub fn lex(input: &str) -> Vec<Token> {
 
 fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
     let create_regex = |s| Regex::new(s).unwrap();
-    vec![
-        (create_regex(r"^\s*\("), Box::new(|_| Token::LParen)),
-        (create_regex(r"^\s*\)"), Box::new(|_| Token::RParen)),
-        (create_regex(r"^\s*\+"), Box::new(|_| Token::Plus)),
-        (create_regex(r"^\s*-"), Box::new(|_| Token::Minus)),
-        (create_regex(r"^\s*\*"), Box::new(|_| Token::Star)),
-        (create_regex(r"^\s*/"), Box::new(|_| Token::Slash)),
-        (create_regex(r"^\s*%"), Box::new(|_| Token::Percent)),
-        (create_regex(r"^\s*\d+"), Box::new(|s| Token::Integer(s.trim().parse::<i32>().unwrap()))),
-        (create_regex(r"^\s*[a-zA-z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
+    vec![(create_regex(r"^\s*-?\d+\.\d+"), Box::new(|s| Token::Float(s.trim().parse::<f64>().unwrap()))),
+         (create_regex(r"^\s*-?\d+"), Box::new(|s| Token::Integer(s.trim().parse::<i64>().unwrap()))),
+         (create_regex(r"^\s*\("), Box::new(|_| Token::LParen)),
+         (create_regex(r"^\s*\)"), Box::new(|_| Token::RParen)),
+         (create_regex(r"^\s*\+"), Box::new(|_| Token::Plus)),
+         (create_regex(r"^\s*-"), Box::new(|_| Token::Minus)),
+         (create_regex(r"^\s*\*"), Box::new(|_| Token::Star)),
+         (create_regex(r"^\s*/"), Box::new(|_| Token::Slash)),
+         (create_regex(r"^\s*\\"), Box::new(|_| Token::Backslash)),
+         (create_regex(r"^\s*%"), Box::new(|_| Token::Percent)),
+         (create_regex(r"^\s*[a-zA-z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
 }
 
 #[cfg(test)]
@@ -69,39 +72,66 @@ mod tests {
     #[test]
     fn test_lex_simple() {
         let tokens = lex("1+2");
-        assert_eq!(tokens, vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
+        assert_eq!(tokens,
+                   vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
     }
 
     #[test]
     fn test_lex_with_whitespace() {
         let tokens = lex(" \t 1 + \t\r\n    2 \r\n ");
-        assert_eq!(tokens, vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
+        assert_eq!(tokens,
+                   vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
     }
 
     #[test]
     fn test_lex_with_big_nums() {
         let tokens = lex("1002 + 123456789");
-        assert_eq!(tokens, vec![Token::Integer(1002), Token::Plus, Token::Integer(123456789)]);
+        assert_eq!(tokens,
+                   vec![Token::Integer(1002), Token::Plus, Token::Integer(123456789)]);
     }
 
     #[test]
     fn test_lex_with_ident() {
         let tokens = lex("abc 100");
-        assert_eq!(tokens, vec![Token::Ident("abc".to_string()), Token::Integer(100)]);
+        assert_eq!(tokens,
+                   vec![Token::Ident("abc".to_string()), Token::Integer(100)]);
+    }
+
+    #[test]
+    fn test_lex_with_negative_integer() {
+        let tokens = lex("- -123");
+        assert_eq!(tokens,
+                   vec![Token::Minus, Token::Integer(-123)]);
+    }
+
+    #[test]
+    fn test_lex_float() {
+        let tokens = lex("1.0 -123.5 1003.125");
+        assert_eq!(tokens,
+                   vec![Token::Float(1.0), Token::Float(-123.5), Token::Float(1003.125)]);
     }
 
     #[test]
     fn test_lex_all_tokens() {
-        let tokens = lex("( ) + - * / % 100 abc");
-        assert_eq!(tokens, vec![
-            Token::LParen, Token::RParen, Token::Plus, Token::Minus, Token::Star, Token::Slash,
-            Token::Percent, Token::Integer(100), Token::Ident("abc".to_string())]);
+        let tokens = lex(r"( ) + - * / \ % 100 abc");
+        assert_eq!(tokens,
+                   vec![Token::LParen,
+                        Token::RParen,
+                        Token::Plus,
+                        Token::Minus,
+                        Token::Star,
+                        Token::Slash,
+                        Token::Backslash,
+                        Token::Percent,
+                        Token::Integer(100),
+                        Token::Ident("abc".to_string())]);
     }
 
     #[test]
     #[should_panic]
     fn test_lex_unknown_token() {
         let tokens = lex("123 < 234"); // '<' is unknown
-        assert_eq!(tokens, vec![Token::Ident("abc".to_string()), Token::Integer(100)]);
+        assert_eq!(tokens,
+                   vec![Token::Ident("abc".to_string()), Token::Integer(100)]);
     }
 }

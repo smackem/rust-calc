@@ -1,3 +1,11 @@
+start:
+    stmt
+
+stmt:
+    'let' IDENTIFIER '=' expr
+    'let' IDENTIFIER '(' identifier-list ')' '=' expr
+    expr
+
 expr:
     term
 
@@ -9,10 +17,13 @@ term:
 product:
     atom '*' product
     atom '/' product
+    atom '\' product
     atom '%' product
     atom
 
 atom:
     INTEGER
+    FLOAT
     IDENTIFIER
-    '(' term ')'
+    IDENTIFIER '(' expr-list ')'
+    '(' expr ')'

@@ -25,7 +25,7 @@ pub enum Token {
 /// let tokens = lex("1 + 2");
 /// assert_eq!(tokens, vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
 /// ```
-pub fn lex(input: &str) -> Vec<Token> {
+pub fn lex(input: &str) -> Result<Vec<Token>, String> {
     let map = token_map();
     let mut tokens = Vec::new();
     let mut index: usize = 0;
@@ -43,9 +43,10 @@ pub fn lex(input: &str) -> Vec<Token> {
             }
         }
 
-        panic!("Could not lex symbol: {}", input_slice);
+        return Result::Err(format!("Could not lex symbol: {}", input_slice));
     }
-    tokens
+
+    Result::Ok(tokens)
 }
 
 // ============================================================================
@@ -71,49 +72,49 @@ mod tests {
 
     #[test]
     fn test_lex_simple() {
-        let tokens = lex("1+2");
+        let tokens = lex("1+2").unwrap();
         assert_eq!(tokens,
                    vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
     }
 
     #[test]
     fn test_lex_with_whitespace() {
-        let tokens = lex(" \t 1 + \t\r\n    2 \r\n ");
+        let tokens = lex(" \t 1 + \t\r\n    2 \r\n ").unwrap();
         assert_eq!(tokens,
                    vec![Token::Integer(1), Token::Plus, Token::Integer(2)]);
     }
 
     #[test]
     fn test_lex_with_big_nums() {
-        let tokens = lex("1002 + 123456789");
+        let tokens = lex("1002 + 123456789").unwrap();
         assert_eq!(tokens,
                    vec![Token::Integer(1002), Token::Plus, Token::Integer(123456789)]);
     }
 
     #[test]
     fn test_lex_with_ident() {
-        let tokens = lex("abc 100");
+        let tokens = lex("abc 100").unwrap();
         assert_eq!(tokens,
                    vec![Token::Ident("abc".to_string()), Token::Integer(100)]);
     }
 
     #[test]
     fn test_lex_with_negative_integer() {
-        let tokens = lex("- -123");
+        let tokens = lex("- -123").unwrap();
         assert_eq!(tokens,
                    vec![Token::Minus, Token::Integer(-123)]);
     }
 
     #[test]
     fn test_lex_float() {
-        let tokens = lex("1.0 -123.5 1003.125");
+        let tokens = lex("1.0 -123.5 1003.125").unwrap();
         assert_eq!(tokens,
                    vec![Token::Float(1.0), Token::Float(-123.5), Token::Float(1003.125)]);
     }
 
     #[test]
     fn test_lex_all_tokens() {
-        let tokens = lex(r"( ) + - * / \ % 100 abc");
+        let tokens = lex(r"( ) + - * / \ % 100 abc").unwrap();
         assert_eq!(tokens,
                    vec![Token::LParen,
                         Token::RParen,
@@ -128,10 +129,7 @@ mod tests {
     }
 
     #[test]
-    #[should_panic]
     fn test_lex_unknown_token() {
-        let tokens = lex("123 < 234"); // '<' is unknown
-        assert_eq!(tokens,
-                   vec![Token::Ident("abc".to_string()), Token::Integer(100)]);
+        assert!(lex("123 < 234").is_err()); // '<' is unknown
     }
 }

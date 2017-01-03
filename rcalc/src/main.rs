@@ -35,19 +35,21 @@ fn main() {
             "#q" => break,
             "" => (),
             line => {
-                let res = eval(line, &*ctx);
-                println!("= {:?}", res);
+                match eval(line, &*ctx) {
+                    Ok(res) => println!("= {:?}", res),
+                    Err(msg) => println!("{}", msg),
+                }
             }
         }
     }
 }
 
-fn eval(line: &str, ctx: &interpreter::Context) -> Value {
-    let input = lexer::lex(&line);
+fn eval(line: &str, ctx: &interpreter::Context) -> Result<Value, String> {
+    let input = try!(lexer::lex(&line));
     println!("Tokens: {:?}", input);
 
     let expr = parser::parse(&input);
     println!("Ast: {:?}", expr);
 
-    interpreter::interpret(&expr, ctx)
+    Result::Ok(interpreter::interpret(&expr, ctx))
 }

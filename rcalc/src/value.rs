@@ -1,6 +1,7 @@
 use std::ops::*;
 
 /// Defines the possible types of values to process.
+/// Supports `Clone`, `Copy` and `PartialEq` semantics (*value type*).
 ///
 /// # Arithmetic Conversion Rules
 ///
@@ -58,7 +59,7 @@ impl Value {
     /// ```
     /// assert_eq!(Value::Float(12.3).integer_divide_by(&Value::Integer(3)), Value::Integer(4));
     /// ```
-    pub fn integer_divide_by(&self, other: &Value) -> Value {
+    pub fn integer_divide_by(&self, other: Value) -> Value {
         Value::Integer(self.to_integer() / other.to_integer())
     }
 }
@@ -190,10 +191,10 @@ mod tests {
 
     #[test]
     fn test_integer_div() {
-        assert_eq!(Value::Integer(7).integer_divide_by(&Value::Integer(3)), Value::Integer(2));
-        assert_eq!(Value::Integer(7).integer_divide_by(&Value::Float(3.0)), Value::Integer(2));
-        assert_eq!(Value::Float(7.0).integer_divide_by(&Value::Integer(3)), Value::Integer(2));
-        assert_eq!(Value::Float(7.0).integer_divide_by(&Value::Float(3.0)), Value::Integer(2));
+        assert_eq!(Value::Integer(7).integer_divide_by(Value::Integer(3)), Value::Integer(2));
+        assert_eq!(Value::Integer(7).integer_divide_by(Value::Float(3.0)), Value::Integer(2));
+        assert_eq!(Value::Float(7.0).integer_divide_by(Value::Integer(3)), Value::Integer(2));
+        assert_eq!(Value::Float(7.0).integer_divide_by(Value::Float(3.0)), Value::Integer(2));
     }
 
     #[test]

@@ -4,7 +4,12 @@ start:
 stmt:
     'let' IDENTIFIER '=' expr
     'let' IDENTIFIER '(' identifier-list ')' '=' expr
+    'let' IDENTIFIER '(' ')' '=' expr
     expr
+
+identifier-list:
+    IDENTIFIER ',' identifier-list
+    IDENTIFIER
 
 expr:
     term
@@ -26,4 +31,9 @@ atom:
     FLOAT
     IDENTIFIER
     IDENTIFIER '(' expr-list ')'
+    IDENTIFIER '(' ')'
     '(' expr ')'
+
+expr-list:
+    expr ',' expr-list
+    expr

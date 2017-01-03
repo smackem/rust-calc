@@ -24,7 +24,7 @@ pub fn interpret(expr: &Expr, ctx: &mut Context) -> Result<Value, String> {
         Expr::Div(ref left, ref right) =>
             try!(interpret(&*left, ctx)) / try!(interpret(&*right, ctx)),
         Expr::IntDiv(ref left, ref right) =>
-            try!(interpret(&*left, ctx)).integer_divide_by(&try!(interpret(&*right, ctx))),
+            try!(interpret(&*left, ctx)).integer_divide_by(try!(interpret(&*right, ctx))),
         Expr::Mod(ref left, ref right) =>
             try!(interpret(&*left, ctx)) % try!(interpret(&*right, ctx)),
         Expr::Ident(ref s) => {

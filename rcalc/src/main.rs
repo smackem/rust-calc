@@ -10,7 +10,6 @@ mod interpreter;
 use std::collections::HashMap;
 use std::io;
 use std::io::Write;
-
 use value::Value;
 
 static IT_IDENT: &'static str = "it";

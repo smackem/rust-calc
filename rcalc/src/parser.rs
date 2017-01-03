@@ -21,6 +21,10 @@ impl Expr {
     }
 }
 
+/// The return type of the parse operation.
+/// Either the AST root if successful, otherwise an error message.
+pub type ParseResult = Result<Expr, String>;
+
 /// Parses the given input and returns the AST.
 ///
 /// # Examples
@@ -30,7 +34,7 @@ impl Expr {
 /// let expr = parse(&input).unwrap();
 /// assert_eq!(expr, Expr::Literal(Value::Integer(1)));
 /// ```
-pub fn parse(input: &Vec<Token>) -> Result<Expr, String> {
+pub fn parse(input: &Vec<Token>) -> ParseResult {
     let mut parser = Parser {
         input: input,
         index: 0,
@@ -88,13 +92,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn parse_expr<'s>(&'s mut self) -> Result<Expr, String> {
+    fn parse_expr<'s>(&'s mut self) -> ParseResult {
         let expr = try!(self.parse_term());
         try!(self.assert_current(Token::Eof));
         Result::Ok(expr)
     }
 
-    fn parse_term<'s>(&'s mut self) -> Result<Expr, String> {
+    fn parse_term<'s>(&'s mut self) -> ParseResult {
         let left = try!(self.parse_product());
 
         let expr = match *self.current() {
@@ -112,7 +116,7 @@ impl<'a> Parser<'a> {
         Result::Ok(expr)
     }
 
-    fn parse_product<'s>(&'s mut self) -> Result<Expr, String> {
+    fn parse_product<'s>(&'s mut self) -> ParseResult {
         let left = try!(self.parse_atom());
 
         let expr = match *self.current() {
@@ -138,7 +142,7 @@ impl<'a> Parser<'a> {
         Result::Ok(expr)
     }
 
-    fn parse_atom<'s>(&'s mut self) -> Result<Expr, String> {
+    fn parse_atom<'s>(&'s mut self) -> ParseResult {
         let expr_opt = match *self.current() {
             Token::Integer(n) => Some(integer_expr(n)),
             Token::Float(f) => Some(float_expr(f)),

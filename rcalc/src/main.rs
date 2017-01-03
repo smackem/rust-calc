@@ -13,10 +13,12 @@ use std::io::Write;
 
 use value::Value;
 
+static IT_IDENT: &'static str = "it";
+
 fn main() {
     let mut ctx = {
         let mut map: HashMap<String, Value> = HashMap::new();
-        map.insert("it".to_string(), Value::Integer(0));
+        map.insert(IT_IDENT.to_string(), Value::Integer(0));
         interpreter::context_from_hashmap(map)
     };
 
@@ -35,7 +37,10 @@ fn main() {
             "" => (),
             line => {
                 match eval(line, &mut *ctx) {
-                    Ok(res) => println!("= {:?}", res),
+                    Ok(val) => {
+                        println!("= {:?}", val);
+                        ctx.put(IT_IDENT, val);
+                    },
                     Err(msg) => println!("{}", msg),
                 }
             }
@@ -47,8 +52,8 @@ fn eval(line: &str, ctx: &mut interpreter::Context) -> Result<Value, String> {
     let input = try!(lexer::lex(&line));
     println!("Tokens: {:?}", input);
 
-    let expr = parser::parse(&input);
+    let expr = try!(parser::parse(&input));
     println!("Ast: {:?}", expr);
 
-    Result::Ok(interpreter::interpret(&expr, ctx))
+    interpreter::interpret(&expr, ctx)
 }

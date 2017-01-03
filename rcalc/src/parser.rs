@@ -27,10 +27,10 @@ impl Expr {
 ///
 /// ```
 /// let input = vec![Token::Integer(1)];
-/// let expr = parse(&input);
+/// let expr = parse(&input).unwrap();
 /// assert_eq!(expr, Expr::Literal(Value::Integer(1)));
 /// ```
-pub fn parse(input: &Vec<Token>) -> Expr {
+pub fn parse(input: &Vec<Token>) -> Result<Expr, String> {
     let mut parser = Parser {
         input: input,
         index: 0,
@@ -65,7 +65,7 @@ impl<'a> Parser<'a> {
             &EOF
         } else {
             let token = &self.input[self.index];
-            self.index = self.index + 1;
+            self.index += 1;
             token
         }
     }
@@ -80,74 +80,84 @@ impl<'a> Parser<'a> {
         token
     }
 
-    fn assert_current<'s>(&'s mut self, token: Token) {
+    fn assert_current<'s>(&'s mut self, token: Token) -> Result<(), String> {
         if token != *self.current() {
-            panic!("Expected {:?}", token);
+            Result::Err(format!("Expected {:?}", token))
+        } else {
+            Ok(())
         }
     }
 
-    fn parse_expr<'s>(&'s mut self) -> Expr {
-        let expr = self.parse_term();
-        self.assert_current(Token::Eof);
-        expr
+    fn parse_expr<'s>(&'s mut self) -> Result<Expr, String> {
+        let expr = try!(self.parse_term());
+        try!(self.assert_current(Token::Eof));
+        Result::Ok(expr)
     }
 
-    fn parse_term<'s>(&'s mut self) -> Expr {
-        let left = self.parse_product();
+    fn parse_term<'s>(&'s mut self) -> Result<Expr, String> {
+        let left = try!(self.parse_product());
 
-        match *self.current() {
+        let expr = match *self.current() {
             Token::Plus => {
                 self.next();
-                Expr::Plus(left.boxed(), self.parse_term().boxed())
+                Expr::Plus(left.boxed(), try!(self.parse_term()).boxed())
             }
             Token::Minus => {
                 self.next();
-                Expr::Minus(left.boxed(), self.parse_term().boxed())
+                Expr::Minus(left.boxed(), try!(self.parse_term()).boxed())
             }
             _ => left,
-        }
+        };
+
+        Result::Ok(expr)
     }
 
-    fn parse_product<'s>(&'s mut self) -> Expr {
-        let left = self.parse_atom();
+    fn parse_product<'s>(&'s mut self) -> Result<Expr, String> {
+        let left = try!(self.parse_atom());
 
-        match *self.current() {
+        let expr = match *self.current() {
             Token::Star => {
                 self.next();
-                Expr::Times(left.boxed(), self.parse_product().boxed())
+                Expr::Times(left.boxed(), try!(self.parse_product()).boxed())
             }
             Token::Slash => {
                 self.next();
-                Expr::Div(left.boxed(), self.parse_product().boxed())
+                Expr::Div(left.boxed(), try!(self.parse_product()).boxed())
             }
             Token::Backslash => {
                 self.next();
-                Expr::IntDiv(left.boxed(), self.parse_product().boxed())
+                Expr::IntDiv(left.boxed(), try!(self.parse_product()).boxed())
             }
             Token::Percent => {
                 self.next();
-                Expr::Mod(left.boxed(), self.parse_product().boxed())
+                Expr::Mod(left.boxed(), try!(self.parse_product()).boxed())
             }
             _ => left,
-        }
-    }
-
-    fn parse_atom<'s>(&'s mut self) -> Expr {
-        let expr = match *self.current() {
-            Token::Integer(n) => integer_expr(n),
-            Token::Float(f) => float_expr(f),
-            Token::Ident(ref s) => Expr::Ident(s.clone()),
-            Token::LParen => {
-                self.next();
-                let inner = self.parse_term();
-                self.assert_current(Token::RParen);
-                inner
-            }
-            _ => panic!("Expected atom"),
         };
 
-        self.next();
-        expr
+        Result::Ok(expr)
+    }
+
+    fn parse_atom<'s>(&'s mut self) -> Result<Expr, String> {
+        let expr_opt = match *self.current() {
+            Token::Integer(n) => Some(integer_expr(n)),
+            Token::Float(f) => Some(float_expr(f)),
+            Token::Ident(ref s) => Some(Expr::Ident(s.clone())),
+            Token::LParen => {
+                self.next();
+                let inner = try!(self.parse_term());
+                try!(self.assert_current(Token::RParen));
+                Some(inner)
+            }
+            _ => None,
+        };
+
+        if let Some(expr) = expr_opt {
+            self.next();
+            Result::Ok(expr)
+        } else {
+            Result::Err("Expected atom".to_string())
+        }
     }
 }
 
@@ -160,7 +170,7 @@ mod tests {
     fn test_parse_atom() {
         // 1
         let input = vec![Token::Integer(1)];
-        let expr = parse(&input);
+        let expr = parse(&input).unwrap();
         assert_eq!(expr, integer_expr(1));
     }
 
@@ -168,7 +178,7 @@ mod tests {
     fn test_parse_simple() {
         // 1 + 2
         let input = vec![Token::Integer(1), Token::Plus, Token::Integer(2)];
-        let expr = parse(&input);
+        let expr = parse(&input).unwrap();
         assert_eq!(expr,
                    Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed()));
     }
@@ -187,7 +197,7 @@ mod tests {
                          Token::Minus,
                          Token::Ident("x".to_string()),
                          Token::RParen];
-        let expr = parse(&input);
+        let expr = parse(&input).unwrap();
         assert_eq!(expr,
                    Expr::Times(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed())
                                    .boxed(),
@@ -210,48 +220,43 @@ mod tests {
                          Token::Integer(2),
                          Token::RParen,
                          Token::RParen];
-        let expr = parse(&input);
+        let expr = parse(&input).unwrap();
         assert_eq!(expr,
                    Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed()));
     }
 
     #[test]
-    #[should_panic]
     fn test_parse_fail_1() {
         // *
         let input = vec![Token::Star];
-        parse(&input);
+        assert!(parse(&input).is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_parse_fail_2() {
         // + 1
         let input = vec![Token::Plus, Token::Integer(1)];
-        parse(&input);
+        assert!(parse(&input).is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_parse_fail_3() {
         // 1 + -
         let input = vec![Token::Integer(1), Token::Plus, Token::Minus];
-        parse(&input);
+        assert!(parse(&input).is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_parse_fail_4() {
         // 1 + )
         let input = vec![Token::Integer(1), Token::Plus, Token::RParen];
-        parse(&input);
+        assert!(parse(&input).is_err());
     }
 
     #[test]
-    #[should_panic]
     fn test_parse_fail_5() {
         // (1 + 2
         let input = vec![Token::LParen, Token::Integer(1), Token::Plus, Token::Integer(2)];
-        parse(&input);
+        assert!(parse(&input).is_err());
     }
 }

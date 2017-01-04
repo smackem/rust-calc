@@ -11,9 +11,12 @@ pub enum Token {
     Slash,
     Backslash,
     Percent,
+    Comma,
+    Eq,
     Integer(i64),
     Float(f64),
     Ident(String),
+    Let,
     Eof,
 }
 
@@ -63,6 +66,9 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
          (create_regex(r"^\s*/"), Box::new(|_| Token::Slash)),
          (create_regex(r"^\s*\\"), Box::new(|_| Token::Backslash)),
          (create_regex(r"^\s*%"), Box::new(|_| Token::Percent)),
+         (create_regex(r"^\s*,"), Box::new(|_| Token::Comma)),
+         (create_regex(r"^\s*="), Box::new(|_| Token::Eq)),
+         (create_regex(r"^\s*let\b"), Box::new(|_| Token::Let)),
          (create_regex(r"^\s*[a-zA-z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
 }
 
@@ -114,7 +120,7 @@ mod tests {
 
     #[test]
     fn test_lex_all_tokens() {
-        let tokens = lex(r"( ) + - * / \ % 100 abc").unwrap();
+        let tokens = lex(r"( ) + - * / \ % , = 100 1.25 abc").unwrap();
         assert_eq!(tokens,
                    vec![Token::LParen,
                         Token::RParen,
@@ -124,7 +130,10 @@ mod tests {
                         Token::Slash,
                         Token::Backslash,
                         Token::Percent,
+                        Token::Comma,
+                        Token::Eq,
                         Token::Integer(100),
+                        Token::Float(1.25),
                         Token::Ident("abc".to_string())]);
     }
 

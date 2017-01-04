@@ -51,8 +51,13 @@ fn eval(line: &str, ctx: &mut interpreter::Context) -> Result<Value, String> {
     let input = try!(lexer::lex(&line));
     println!("Tokens: {:?}", input);
 
-    let expr = try!(parser::parse(&input));
-    println!("Ast: {:?}", expr);
+    let stmt = try!(parser::parse(&input));
+    println!("Ast: {:?}", stmt);
 
-    interpreter::interpret(&expr, ctx)
+    if let parser::Stmt::Expr(expr) = stmt {
+        interpreter::interpret(&expr, ctx)
+    }
+    else {
+        Result::Err("Stmt not implemented yet".to_string())
+    }
 }

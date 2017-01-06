@@ -16,7 +16,7 @@ pub enum Stmt {
 }
 
 /// Defines the syntax elements that make up the expression part of the AST.
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
     Plus(Box<Expr>, Box<Expr>),
     Minus(Box<Expr>, Box<Expr>),
@@ -24,7 +24,8 @@ pub enum Expr {
     Div(Box<Expr>, Box<Expr>),
     IntDiv(Box<Expr>, Box<Expr>),
     Mod(Box<Expr>, Box<Expr>),
-    Ident(String),
+    BindingRef(String),
+    FunCall(String, Box<Vec<Expr>>),
     Literal(Value),
 }
 
@@ -54,18 +55,6 @@ pub fn parse(input: &Vec<Token>) -> Result<Stmt, String> {
         index: 0,
     };
     parser.parse_stmt()
-}
-
-/// Returns the passed `i64` packaged in a `Stmt::Expr(Expr::Literal)` statement.
-/// Useful for testing.
-pub fn integer_stmt(n: i64) -> Stmt {
-    Stmt::Expr(integer_expr(n))
-}
-
-/// Returns the passed `f64` packaged in a `Stmt::Expr(Expr::Literal)` statement.
-/// Useful for testing.
-pub fn float_stmt(f: f64) -> Stmt {
-    Stmt::Expr(float_expr(f))
 }
 
 /// Returns the passed `i64` packaged in a `Expr::Literal` expression.
@@ -177,7 +166,7 @@ impl<'a> Parser<'a> {
             },
             _ => try!(Result::Err(format!("Expected identifier or {:?}", Token::RParen))),
         };
-        
+
         try!(self.assert_current(Token::Eq));
         self.next();
 
@@ -188,10 +177,10 @@ impl<'a> Parser<'a> {
     // (a, b, xyz)
     //  ^
     fn parse_ident_list<'s>(&'s mut self) -> Result<Vec<String>, String> {
-        let mut tokens = Vec::new();
+        let mut idents = Vec::new();
         loop {
             if let Token::Ident(ref ident) = *self.current() {
-                tokens.push(ident.clone());
+                idents.push(ident.clone());
                 self.next();
             } else {
                 try!(Result::Err("Expected identifier"));
@@ -203,7 +192,7 @@ impl<'a> Parser<'a> {
             };
         }
 
-        Result::Ok(tokens)
+        Result::Ok(idents)
     }
 
     // let x = 1
@@ -260,26 +249,81 @@ impl<'a> Parser<'a> {
         Result::Ok(expr)
     }
 
+    // 1
+    // f()
+    // f(1)
+    // ^
     fn parse_atom<'s>(&'s mut self) -> Result<Expr, String> {
-        let expr_opt = match *self.current() {
-            Token::Integer(n) => Some(integer_expr(n)),
-            Token::Float(f) => Some(float_expr(f)),
-            Token::Ident(ref s) => Some(Expr::Ident(s.clone())),
+        let expr = match *self.current() {
+            Token::Integer(n) => {
+                self.next();
+                integer_expr(n)
+            },
+            Token::Float(f) => {
+                self.next();
+                float_expr(f)
+            },
+            Token::Ident(ref s) => {
+                self.next();
+                let ident = s.clone();
+                match *self.current() {
+                    Token::LParen => {
+                        self.next();
+                        let args = try!(self.parse_fun_call());
+                        Expr::FunCall(ident, Box::new(args))
+                    },
+                    _ => Expr::BindingRef(ident),
+                }
+            },
             Token::LParen => {
                 self.next();
                 let inner = try!(self.parse_term());
                 try!(self.assert_current(Token::RParen));
-                Some(inner)
+                self.next();
+                inner
             }
-            _ => None,
+            _ => try!(Result::Err(format!("Expected atom, found {:?}", self.current()))),
         };
 
-        if let Some(expr) = expr_opt {
-            self.next();
-            Result::Ok(expr)
-        } else {
-            Result::Err("Expected atom".to_string())
+        Result::Ok(expr)
+    }
+
+    // 1
+    // f()
+    // f(1)
+    //   ^
+    fn parse_fun_call<'s>(&'s mut self) -> Result<Vec<Expr>, String> {
+        let expr_list = match *self.current() {
+            Token::RParen => {
+                self.next();
+                vec![]
+            },
+            _ => {
+                let exprs = try!(self.parse_expr_list());
+                try!(self.assert_current(Token::RParen));
+                self.next();
+                exprs
+            },
+        };
+
+        Result::Ok(expr_list)
+    }
+
+    // 1 + 2
+    // 1 + 2, a, 5.0 / x
+    // ^
+    fn parse_expr_list<'s>(&'s mut self) -> Result<Vec<Expr>, String> {
+        let mut exprs = Vec::new();
+        loop {
+            exprs.push(try!(self.parse_expr()));
+
+            match *self.current() {
+                Token::Comma => self.next(),
+                _ => break,
+            };
         }
+
+        Result::Ok(exprs)
     }
 }
 
@@ -293,7 +337,7 @@ mod tests {
         // 1
         let input = vec![Token::Integer(1)];
         let stmt = parse(&input).unwrap();
-        assert_eq!(stmt, integer_stmt(1));
+        assert_eq!(stmt, Stmt::Expr(integer_expr(1)));
     }
 
     #[test]
@@ -324,7 +368,7 @@ mod tests {
                    Stmt::Expr(
                        Expr::Times(
                            Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed()).boxed(),
-                           Expr::Minus(integer_expr(5).boxed(), Expr::Ident("x".to_string()).boxed()).boxed())));
+                           Expr::Minus(integer_expr(5).boxed(), Expr::BindingRef("x".to_string()).boxed()).boxed())));
     }
 
     #[test]
@@ -441,5 +485,58 @@ mod tests {
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
                    Stmt::FunBind("f".to_string(), vec!["a".to_string(), "b".to_string()], integer_expr(1)));
+    }
+    
+    #[test]
+    fn test_parse_function_call_1() {
+        // f()
+        let input = vec![Token::Ident("f".to_string()), Token::LParen, Token::RParen];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt,
+                   Stmt::Expr(Expr::FunCall("f".to_string(), Box::new(vec![]))));
+    }
+
+    #[test]
+    fn test_parse_function_call_2() {
+        // f(1)
+        let input = vec![Token::Ident("f".to_string()), Token::LParen, Token::Integer(1), Token::RParen];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt,
+                   Stmt::Expr(Expr::FunCall("f".to_string(), Box::new(vec![integer_expr(1)]))));
+    }
+
+    #[test]
+    fn test_parse_function_call_3() {
+        // f(1, 2)
+        let input = vec![Token::Ident("f".to_string()),
+                         Token::LParen,
+                         Token::Integer(1),
+                         Token::Comma,
+                         Token::Integer(2),
+                         Token::RParen];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt,
+                   Stmt::Expr(Expr::FunCall("f".to_string(),
+                              Box::new(vec![integer_expr(1), integer_expr(2)]))));
+    }
+
+    #[test]
+    fn test_parse_function_call_4() {
+        // f(1, (2 + 3))
+        let input = vec![Token::Ident("f".to_string()),
+                         Token::LParen,
+                         Token::Integer(1),
+                         Token::Comma,
+                         Token::LParen,
+                         Token::Integer(2),
+                         Token::Plus,
+                         Token::Integer(3),
+                         Token::RParen,
+                         Token::RParen];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt,
+                   Stmt::Expr(Expr::FunCall("f".to_string(),
+                              Box::new(vec![integer_expr(1),
+                                            Expr::Plus(integer_expr(2).boxed(), integer_expr(3).boxed())]))));
     }
 }

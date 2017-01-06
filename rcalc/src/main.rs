@@ -37,10 +37,11 @@ fn main() {
             "" => (),
             line => {
                 match process_line(line, &mut *ctx) {
-                    Ok(val) => {
-                        println!("= {:?}", val);
-                        ctx.put(IT_IDENT, RuntimeItem::Value(val));
+                    Ok(Some(item)) => {
+                        println!("= {:?}", item);
+                        ctx.put(IT_IDENT, item);
                     },
+                    Ok(None) => println!("OK"),
                     Err(msg) => println!("{}", msg),
                 }
             }
@@ -48,17 +49,12 @@ fn main() {
     }
 }
 
-fn process_line(line: &str, ctx: &mut interpreter::Context) -> Result<Value, String> {
+fn process_line(line: &str, ctx: &mut interpreter::Context) -> Result<Option<RuntimeItem>, String> {
     let input = try!(lexer::lex(&line));
     println!("Tokens: {:?}", input);
 
     let stmt = try!(parser::parse(&input));
     println!("Ast: {:?}", stmt);
 
-    if let parser::Stmt::Expr(expr) = stmt {
-        interpreter::eval_expr(&expr, ctx)
-    }
-    else {
-        Result::Err("Stmt not implemented yet".to_string())
-    }
+    interpreter::interpret(&stmt, ctx)
 }

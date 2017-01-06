@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use parser::{Expr, Stmt};
 use value::Value;
 
+#[derive(Debug, PartialEq)]
 pub enum RuntimeItem {
     Function(Vec<String>, Expr),
     Value(Value),
@@ -39,7 +40,7 @@ pub fn interpret(stmt: &Stmt, ctx: &mut Context) -> Result<Option<RuntimeItem>, 
 /// let res = interpret(&expr, &*ctx());
 /// assert_eq!(res, Value::Integer(1));
 /// ```
-pub fn eval_expr(expr: &Expr, ctx: &mut Context) -> Result<Value, String> {
+pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
     let val = match *expr {
         Expr::Plus(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) + try!(eval_expr(&*right, ctx)),
@@ -56,17 +57,28 @@ pub fn eval_expr(expr: &Expr, ctx: &mut Context) -> Result<Value, String> {
         Expr::BindingRef(ref s) => {
             let res = match ctx.get(s) {
                 Some(item) => {
-                    if let RuntimeItem::Value(ref v) = *item {
-                        Result::Ok(*v)
-                    } else {
-                        Result::Err(format!("'{}' is not a value", s))
+                    match *item {
+                        RuntimeItem::Value(ref v) => Result::Ok(*v),
+                        _ => Result::Err(format!("'{}' is not a value", s)),
                     }
                 },
                 None => Result::Err(format!("Identifier '{}' not found", s)), 
             };
             try!(res)
         },
-        Expr::FunCall(ref s, ref params) => try!(Result::Err("FunCall not implemented")),
+        Expr::FunCall(ref s, ref args) => {
+            let res = match ctx.get(s) {
+                Some(item) => {
+                    match *item {
+                        RuntimeItem::Function(ref param_idents, ref body_expr) =>
+                            call_function(param_idents, args, body_expr, ctx),
+                        _ => Result::Err(format!("'{}' is not a function", s)),
+                    }
+                },
+                None => Result::Err(format!("Identifier '{}' not found", s)), 
+            };
+            try!(res)
+        },
         Expr::Literal(ref v) => *v,
     };
 
@@ -109,10 +121,45 @@ impl Context for MapContext {
     }
 }
 
+struct StackedContext<'a> {
+    head: MapContext,
+    next: &'a Context,
+}
+
+impl<'a> StackedContext<'a> {
+    fn new(next: &'a Context) -> StackedContext {
+        let map = MapContext { map: HashMap::new() };
+        StackedContext { head: map, next: next }
+    }
+}
+
+impl<'a> Context for StackedContext<'a> {
+    fn get(&self, ident: &str) -> Option<&RuntimeItem> {
+        match self.head.get(ident) {
+            Some(item) => Some(item),
+            None => self.next.get(ident),
+        }
+    }
+
+    fn put(&mut self, ident: &str, item: RuntimeItem) {
+        self.head.put(ident, item);
+    }
+}
+
+fn call_function(param_idents: &Vec<String>, args: &Vec<Expr>, body: &Expr, ctx: &Context) -> Result<Value, String> {
+    let min_len = ::std::cmp::min(param_idents.len(), args.len());
+    let mut head_ctx = StackedContext::new(ctx);
+    for i in 0..min_len {
+        let arg_val = try!(eval_expr(&args[i], ctx));
+        head_ctx.put(&param_idents[i], RuntimeItem::Value(arg_val));
+    }
+    eval_expr(body, &head_ctx)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use parser::{Expr, integer_expr, float_expr};
+    use parser::{Expr, Stmt, integer_expr, float_expr};
     use value::Value;
     use std::collections::HashMap;
 
@@ -121,7 +168,7 @@ mod tests {
     }
 
     #[test]
-    fn test_interpret_simple() {
+    fn test_eval_simple() {
         // 1
         let expr = integer_expr(1);
         let res = eval_expr(&expr, &mut *ctx()).unwrap();
@@ -129,7 +176,7 @@ mod tests {
     }
 
     #[test]
-    fn test_interpret_term() {
+    fn test_eval_term() {
         // 1 + 2
         let expr = Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed());
         let res = eval_expr(&expr, &mut *ctx()).unwrap();
@@ -137,7 +184,7 @@ mod tests {
     }
 
     #[test]
-    fn test_interpret_complex() {
+    fn test_eval_complex() {
         // (1 + 2) * (5 - 3.0)
         let expr =
             Expr::Times(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed()).boxed(),
@@ -147,7 +194,7 @@ mod tests {
     }
 
     #[test]
-    fn test_interpret_lookup_ident() {
+    fn test_eval_lookup_ident() {
         let expr = Expr::BindingRef("X".to_string());
         let mut ctx = ctx();
         (*ctx).put("X", RuntimeItem::Value(Value::Integer(1)));
@@ -156,9 +203,71 @@ mod tests {
     }
 
     #[test]
-    fn test_interpret_fail_unknown_ident() {
+    fn test_eval_fail_unknown_ident() {
         let expr = Expr::BindingRef("X".to_string());
         let res = eval_expr(&expr, &mut *ctx());
         assert!(res.is_err());
+    }
+
+    #[test]
+    fn test_eval_fun_call_1() {
+        let expr = Expr::FunCall("f".to_string(), Box::new(vec![]));
+        let mut ctx = ctx();
+        (*ctx).put("f", RuntimeItem::Function(vec![], integer_expr(1)));
+        let res = eval_expr(&expr, &mut *ctx).unwrap();
+        assert_eq!(res, Value::Integer(1));
+    }
+
+    #[test]
+    fn test_eval_fun_call_2() {
+        // let f(x) = x
+        // f(123)
+        let expr = Expr::FunCall("f".to_string(), Box::new(vec![integer_expr(123)]));
+        let mut ctx = ctx();
+        (*ctx).put("f", RuntimeItem::Function(vec!["x".to_string()], Expr::BindingRef("x".to_string())));
+        let res = eval_expr(&expr, &mut *ctx).unwrap();
+        assert_eq!(res, Value::Integer(123));
+    }
+
+    #[test]
+    fn test_interpret_simple() {
+        // 1
+        let stmt = Stmt::Expr(integer_expr(1));
+        let mut ctx = ctx();
+        let res = interpret(&stmt, &mut *ctx).unwrap();
+        assert_eq!(res, Some(RuntimeItem::Value(Value::Integer(1))));
+    }
+
+    #[test]
+    fn test_interpret_var_bind() {
+        // let a = 1
+        let stmt = Stmt::VarBind("a".to_string(), integer_expr(1));
+        let mut ctx = ctx();
+        let res = interpret(&stmt, &mut *ctx).unwrap();
+        assert_eq!(res, Some(RuntimeItem::Value(Value::Integer(1))));
+        assert_eq!(ctx.get("a"), Some(&RuntimeItem::Value(Value::Integer(1))));
+    }
+
+    #[test]
+    fn test_interpret_fun_bind_1() {
+        // let f() = 1
+        let stmt = Stmt::FunBind("f".to_string(), vec![], integer_expr(1));
+        let mut ctx = ctx();
+        let res = interpret(&stmt, &mut *ctx).unwrap();
+        assert_eq!(res, None);
+        assert_eq!(ctx.get("f"), Some(&RuntimeItem::Function(vec![], integer_expr(1))));
+    }
+
+    #[test]
+    fn test_interpret_fun_bind_2() {
+        // let f(x) = x
+        let stmt = Stmt::FunBind("f".to_string(),
+                                 vec!["x".to_string()],
+                                 Expr::BindingRef("x".to_string()));
+        let mut ctx = ctx();
+        let res = interpret(&stmt, &mut *ctx).unwrap();
+        assert_eq!(res, None);
+        assert_eq!(ctx.get("f"),
+                   Some(&RuntimeItem::Function(vec!["x".to_string()], Expr::BindingRef("x".to_string()))));
     }
 }

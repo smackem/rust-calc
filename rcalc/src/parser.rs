@@ -20,10 +20,15 @@ pub enum Stmt {
 pub enum Expr {
     Plus(Box<Expr>, Box<Expr>),
     Minus(Box<Expr>, Box<Expr>),
+    BitwiseAnd(Box<Expr>, Box<Expr>),
+    BitwiseOr(Box<Expr>, Box<Expr>),
+    BitwiseXor(Box<Expr>, Box<Expr>),
     Times(Box<Expr>, Box<Expr>),
     Div(Box<Expr>, Box<Expr>),
     IntDiv(Box<Expr>, Box<Expr>),
     Mod(Box<Expr>, Box<Expr>),
+    ShiftLeft(Box<Expr>, Box<Expr>),
+    ShiftRight(Box<Expr>, Box<Expr>),
     BindingRef(String),
     FunCall(String, Box<Vec<Expr>>),
     Literal(Value),
@@ -212,11 +217,23 @@ impl<'a> Parser<'a> {
             Token::Plus => {
                 self.next();
                 Expr::Plus(left.boxed(), try!(self.parse_term()).boxed())
-            }
+            },
             Token::Minus => {
                 self.next();
                 Expr::Minus(left.boxed(), try!(self.parse_term()).boxed())
-            }
+            },
+            Token::Ampersand => {
+                self.next();
+                Expr::BitwiseAnd(left.boxed(), try!(self.parse_term()).boxed())
+            },
+            Token::VBar => {
+                self.next();
+                Expr::BitwiseOr(left.boxed(), try!(self.parse_term()).boxed())
+            },
+            Token::Caret => {
+                self.next();
+                Expr::BitwiseXor(left.boxed(), try!(self.parse_term()).boxed())
+            },
             _ => left,
         };
 
@@ -230,19 +247,27 @@ impl<'a> Parser<'a> {
             Token::Star => {
                 self.next();
                 Expr::Times(left.boxed(), try!(self.parse_product()).boxed())
-            }
+            },
             Token::Slash => {
                 self.next();
                 Expr::Div(left.boxed(), try!(self.parse_product()).boxed())
-            }
+            },
             Token::Backslash => {
                 self.next();
                 Expr::IntDiv(left.boxed(), try!(self.parse_product()).boxed())
-            }
+            },
             Token::Percent => {
                 self.next();
                 Expr::Mod(left.boxed(), try!(self.parse_product()).boxed())
-            }
+            },
+            Token::LtLt => {
+                self.next();
+                Expr::ShiftLeft(left.boxed(), try!(self.parse_product()).boxed())
+            },
+            Token::GtGt => {
+                self.next();
+                Expr::ShiftRight(left.boxed(), try!(self.parse_product()).boxed())
+            },
             _ => left,
         };
 
@@ -281,7 +306,7 @@ impl<'a> Parser<'a> {
                 try!(self.assert_current(Token::RParen));
                 self.next();
                 inner
-            }
+            },
             _ => try!(Result::Err(format!("Expected atom, found {:?}", self.current()))),
         };
 

@@ -8,11 +8,19 @@ pub enum Token {
     Plus,
     Minus,
     Star,
+    StarStar,
     Slash,
     Backslash,
     Percent,
     Comma,
     Eq,
+    Ampersand,
+    VBar,
+    Caret,
+    LtLt,
+    GtGt,
+    Log,
+    Sqrt,
     Integer(i64),
     Float(f64),
     Ident(String),
@@ -62,12 +70,20 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
          (create_regex(r"^\s*\)"), Box::new(|_| Token::RParen)),
          (create_regex(r"^\s*\+"), Box::new(|_| Token::Plus)),
          (create_regex(r"^\s*-"), Box::new(|_| Token::Minus)),
+         (create_regex(r"^\s*\*\*"), Box::new(|_| Token::StarStar)),
          (create_regex(r"^\s*\*"), Box::new(|_| Token::Star)),
          (create_regex(r"^\s*/"), Box::new(|_| Token::Slash)),
          (create_regex(r"^\s*\\"), Box::new(|_| Token::Backslash)),
          (create_regex(r"^\s*%"), Box::new(|_| Token::Percent)),
          (create_regex(r"^\s*,"), Box::new(|_| Token::Comma)),
          (create_regex(r"^\s*="), Box::new(|_| Token::Eq)),
+         (create_regex(r"^\s*&"), Box::new(|_| Token::Ampersand)),
+         (create_regex(r"^\s*\|"), Box::new(|_| Token::VBar)),
+         (create_regex(r"^\s*\^"), Box::new(|_| Token::Caret)),
+         (create_regex(r"^\s*<<"), Box::new(|_| Token::LtLt)),
+         (create_regex(r"^\s*>>"), Box::new(|_| Token::GtGt)),
+         (create_regex(r"^\s*log\b"), Box::new(|_| Token::Log)),
+         (create_regex(r"^\s*sqrt\b"), Box::new(|_| Token::Sqrt)),
          (create_regex(r"^\s*let\b"), Box::new(|_| Token::Let)),
          (create_regex(r"^\s*[a-zA-z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
 }
@@ -120,7 +136,7 @@ mod tests {
 
     #[test]
     fn test_lex_all_tokens() {
-        let tokens = lex(r"( ) + - * / \ % , = 100 1.25 abc").unwrap();
+        let tokens = lex(r"( ) + - * / \ % , = 100 1.25 abc let ** & | ^ << >> log sqrt").unwrap();
         assert_eq!(tokens,
                    vec![Token::LParen,
                         Token::RParen,
@@ -134,7 +150,17 @@ mod tests {
                         Token::Eq,
                         Token::Integer(100),
                         Token::Float(1.25),
-                        Token::Ident("abc".to_string())]);
+                        Token::Ident("abc".to_string()),
+                        Token::Let,
+                        Token::StarStar,
+                        Token::Ampersand,
+                        Token::VBar,
+                        Token::Caret,
+                        Token::LtLt,
+                        Token::GtGt,
+                        Token::Log,
+                        Token::Sqrt,
+                        ]);
     }
 
     #[test]

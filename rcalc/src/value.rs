@@ -100,6 +100,60 @@ impl Sub for Value {
     }
 }
 
+impl BitAnd for Value {
+    type Output = Value;
+
+    /// Caclulates `Value` `other` & `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(1) & Value::Integer(3), Value::Integer(1));
+    /// ```
+    fn bitand(self, other: Value) -> Value {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => Value::Integer(a & b),
+            (left, right) => Value::Integer(left.to_integer() & right.to_integer()),
+        }
+    }
+}
+
+impl BitOr for Value {
+    type Output = Value;
+
+    /// Caclulates `Value` `other` | `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(1) | Value::Integer(2), Value::Integer(3));
+    /// ```
+    fn bitor(self, other: Value) -> Value {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => Value::Integer(a | b),
+            (left, right) => Value::Integer(left.to_integer() | right.to_integer()),
+        }
+    }
+}
+
+impl BitXor for Value {
+    type Output = Value;
+
+    /// Caclulates `Value` `other` ^ `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(1) ^ Value::Integer(3), Value::Integer(2));
+    /// ```
+    fn bitxor(self, other: Value) -> Value {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => Value::Integer(a ^ b),
+            (left, right) => Value::Integer(left.to_integer() ^ right.to_integer()),
+        }
+    }
+}
+
 impl Mul for Value {
     type Output = Value;
 
@@ -147,6 +201,42 @@ impl Rem for Value {
         match (self, other) {
             (Value::Integer(a), Value::Integer(b)) => Value::Integer(a % b),
             (left, right) => Value::Float(left.to_float() % right.to_float()),
+        }
+    }
+}
+
+impl Shl<Value> for Value {
+    type Output = Value;
+
+    /// Shifts `Value` `self` left by `other` bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(1) << Value::Integer(2), Value::Integer(4));
+    /// ```
+    fn shl(self, other: Value) -> Value {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => Value::Integer(a << b),
+            (left, right) => Value::Integer(left.to_integer() << right.to_integer()),
+        }
+    }
+}
+
+impl Shr<Value> for Value {
+    type Output = Value;
+
+    /// Shifts `Value` `self` right by `other` bits.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(8) >> Value::Integer(3), Value::Integer(1));
+    /// ```
+    fn shr(self, other: Value) -> Value {
+        match (self, other) {
+            (Value::Integer(a), Value::Integer(b)) => Value::Integer(a >> b),
+            (left, right) => Value::Integer(left.to_integer() >> right.to_integer()),
         }
     }
 }

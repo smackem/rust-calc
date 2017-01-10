@@ -46,6 +46,12 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*left, ctx)) + try!(eval_expr(&*right, ctx)),
         Expr::Minus(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) - try!(eval_expr(&*right, ctx)),
+        Expr::BitwiseAnd(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)) & try!(eval_expr(&*right, ctx)),
+        Expr::BitwiseOr(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)) | try!(eval_expr(&*right, ctx)),
+        Expr::BitwiseXor(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)) ^ try!(eval_expr(&*right, ctx)),
         Expr::Times(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) * try!(eval_expr(&*right, ctx)),
         Expr::Div(ref left, ref right) =>
@@ -54,6 +60,10 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*left, ctx)).integer_divide_by(try!(eval_expr(&*right, ctx))),
         Expr::Mod(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) % try!(eval_expr(&*right, ctx)),
+        Expr::ShiftLeft(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)) << try!(eval_expr(&*right, ctx)),
+        Expr::ShiftRight(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)) >> try!(eval_expr(&*right, ctx)),
         Expr::BindingRef(ref s) => {
             let res = match ctx.get(s) {
                 Some(item) => {

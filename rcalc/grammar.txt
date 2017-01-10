@@ -17,13 +17,23 @@ expr:
 term:
     product '+' term
     product '-' term
+    product '&' term
+    product '|' term
+    product '^' term
     product
 
 product:
-    atom '*' product
-    atom '/' product
-    atom '\' product
-    atom '%' product
+    molecule '*' product
+    molecule '/' product
+    molecule '\' product
+    molecule '%' product
+    molecule '<<' product
+    molecule '>>' product
+    molecule 
+
+molecule:
+    atom 'log' molecule
+    atom '**' molecule
     atom
 
 atom:
@@ -32,6 +42,7 @@ atom:
     IDENTIFIER
     IDENTIFIER '(' expr-list ')'
     IDENTIFIER '(' ')'
+    'sqrt' atom
     '(' expr ')'
 
 expr-list:

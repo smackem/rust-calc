@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use parser::{Expr, Stmt};
 use value::Value;
+use num_traits::pow;
 
 #[derive(Debug, PartialEq)]
 pub enum RuntimeItem {
@@ -64,6 +65,13 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*left, ctx)) << try!(eval_expr(&*right, ctx)),
         Expr::ShiftRight(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) >> try!(eval_expr(&*right, ctx)),
+        Expr::Exp(ref left, ref right) => {
+            let l_float = try!(eval_expr(&*left, ctx)).to_float();
+            let r_float = try!(eval_expr(&*right, ctx)).to_float();
+            Value::Float(pow(l_float, r_float))
+        },
+        Expr::Log(ref left, ref right) =>
+            unimplemented!(),
         Expr::BindingRef(ref s) => {
             let res = match ctx.get(s) {
                 Some(item) => {

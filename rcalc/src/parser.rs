@@ -29,6 +29,8 @@ pub enum Expr {
     Mod(Box<Expr>, Box<Expr>),
     ShiftLeft(Box<Expr>, Box<Expr>),
     ShiftRight(Box<Expr>, Box<Expr>),
+    Exp(Box<Expr>, Box<Expr>),
+    Log(Box<Expr>, Box<Expr>),
     BindingRef(String),
     FunCall(String, Box<Vec<Expr>>),
     Literal(Value),
@@ -241,7 +243,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_product<'s>(&'s mut self) -> Result<Expr, String> {
-        let left = try!(self.parse_atom());
+        let left = try!(self.parse_molecule());
 
         let expr = match *self.current() {
             Token::Star => {
@@ -267,6 +269,24 @@ impl<'a> Parser<'a> {
             Token::GtGt => {
                 self.next();
                 Expr::ShiftRight(left.boxed(), try!(self.parse_product()).boxed())
+            },
+            _ => left,
+        };
+
+        Result::Ok(expr)
+    }
+
+    fn parse_molecule<'s>(&'s mut self) -> Result<Expr, String> {
+        let left = try!(self.parse_atom());
+
+        let expr = match *self.current() {
+            Token::StarStar => {
+                self.next();
+                Expr::Exp(left.boxed(), try!(self.parse_molecule()).boxed())
+            },
+            Token::Log => {
+                self.next();
+                Expr::Log(left.boxed(), try!(self.parse_molecule()).boxed())
             },
             _ => left,
         };

@@ -43,6 +43,12 @@ atom:
     IDENTIFIER '(' expr-list ')'
     IDENTIFIER '(' ')'
     'sqrt' atom
+    'sin' atom
+    'cos' atom
+    'tan' atom
+    'asin' atom
+    'acos' atom
+    'atan' atom
     '(' expr ')'
 
 expr-list:

@@ -20,7 +20,7 @@ pub fn interpret(stmt: &Stmt, ctx: &mut Context) -> Result<Option<RuntimeItem>, 
             ctx.put(ident, item);
             None
         },
-        Stmt::Expr(ref expr) => {
+        Stmt::Eval(ref expr) => {
             let val = try!(eval_expr(expr, ctx));
             Some(RuntimeItem::Value(val))
         },
@@ -280,7 +280,7 @@ mod tests {
     #[test]
     fn test_interpret_simple() {
         // 1
-        let stmt = Stmt::Expr(integer_expr(1));
+        let stmt = Stmt::Eval(integer_expr(1));
         let mut ctx = ctx();
         let res = interpret(&stmt, &mut *ctx).unwrap();
         assert_eq!(res, Some(RuntimeItem::Value(Value::Integer(1))));

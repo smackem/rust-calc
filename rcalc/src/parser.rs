@@ -11,8 +11,8 @@ pub enum Stmt {
     /// of the parameters and the rhs expression
     FunBind(String, Vec<String>, Expr),
 
-    /// An expression statement
-    Expr(Expr),
+    /// An evaluation statement that consists of an expression
+    Eval(Expr),
 }
 
 /// Defines the syntax elements that make up the expression part of the AST.
@@ -61,7 +61,7 @@ impl Expr {
 /// ```
 /// let input = vec![Token::Integer(1)];
 /// let stmt = parse(&input).unwrap();
-/// assert_eq!(stmt, Stmt::Expr(Expr::Literal(Value::Integer(1))));
+/// assert_eq!(stmt, Stmt::Eval(Expr::Literal(Value::Integer(1))));
 /// ```
 pub fn parse(input: &Vec<Token>) -> Result<Stmt, String> {
     let mut parser = Parser {
@@ -132,7 +132,7 @@ impl<'a> Parser<'a> {
                 self.next();
                 try!(self.parse_binding())
             },
-            _ => Stmt::Expr(try!(self.parse_expr())),
+            _ => Stmt::Eval(try!(self.parse_expr())),
         };
 
         try!(self.assert_current(Token::Eof));
@@ -437,7 +437,7 @@ mod tests {
         // 1
         let input = vec![Token::Integer(1)];
         let stmt = parse(&input).unwrap();
-        assert_eq!(stmt, Stmt::Expr(integer_expr(1)));
+        assert_eq!(stmt, Stmt::Eval(integer_expr(1)));
     }
 
     #[test]
@@ -446,7 +446,7 @@ mod tests {
         let input = vec![Token::Integer(1), Token::Plus, Token::Integer(2)];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed())));
+                   Stmt::Eval(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed())));
     }
 
     #[test]
@@ -455,7 +455,7 @@ mod tests {
         let input = vec![Token::Integer(2), Token::Minus, Token::Integer(1), Token::Minus, Token::Integer(1)];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(
+                   Stmt::Eval(
                        Expr::Minus(
                            Expr::Minus(integer_expr(2).boxed(), integer_expr(1).boxed()).boxed(),
                            integer_expr(1).boxed())));
@@ -467,7 +467,7 @@ mod tests {
         let input = vec![Token::Integer(12), Token::Slash, Token::Integer(2), Token::Slash, Token::Integer(2)];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(
+                   Stmt::Eval(
                        Expr::Div(
                            Expr::Div(integer_expr(12).boxed(), integer_expr(2).boxed()).boxed(),
                            integer_expr(2).boxed())));
@@ -489,7 +489,7 @@ mod tests {
                          Token::RParen];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(
+                   Stmt::Eval(
                        Expr::Times(
                            Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed()).boxed(),
                            Expr::Minus(integer_expr(5).boxed(), Expr::BindingRef("x".to_string()).boxed()).boxed())));
@@ -511,7 +511,7 @@ mod tests {
                          Token::RParen];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed())));
+                   Stmt::Eval(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed())));
     }
 
     #[test]
@@ -617,7 +617,7 @@ mod tests {
         let input = vec![Token::Ident("f".to_string()), Token::LParen, Token::RParen];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(Expr::FunCall("f".to_string(), Box::new(vec![]))));
+                   Stmt::Eval(Expr::FunCall("f".to_string(), Box::new(vec![]))));
     }
 
     #[test]
@@ -626,7 +626,7 @@ mod tests {
         let input = vec![Token::Ident("f".to_string()), Token::LParen, Token::Integer(1), Token::RParen];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(Expr::FunCall("f".to_string(), Box::new(vec![integer_expr(1)]))));
+                   Stmt::Eval(Expr::FunCall("f".to_string(), Box::new(vec![integer_expr(1)]))));
     }
 
     #[test]
@@ -640,7 +640,7 @@ mod tests {
                          Token::RParen];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(Expr::FunCall("f".to_string(),
+                   Stmt::Eval(Expr::FunCall("f".to_string(),
                               Box::new(vec![integer_expr(1), integer_expr(2)]))));
     }
 
@@ -659,7 +659,7 @@ mod tests {
                          Token::RParen];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
-                   Stmt::Expr(Expr::FunCall("f".to_string(),
+                   Stmt::Eval(Expr::FunCall("f".to_string(),
                               Box::new(vec![integer_expr(1),
                                             Expr::Plus(integer_expr(2).boxed(), integer_expr(3).boxed())]))));
     }

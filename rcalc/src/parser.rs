@@ -335,45 +335,31 @@ impl<'a> Parser<'a> {
             },
             Token::Sqrt => {
                 self.next();
-                let inner = Expr::Sqrt(try!(self.parse_atom()).boxed());
-                self.next();
-                inner
+                Expr::Sqrt(try!(self.parse_atom()).boxed())
             },
             Token::Sin => {
                 self.next();
-                let inner = Expr::Sin(try!(self.parse_atom()).boxed());
-                self.next();
-                inner
+                Expr::Sin(try!(self.parse_atom()).boxed())
             },
             Token::Cos => {
                 self.next();
-                let inner = Expr::Cos(try!(self.parse_atom()).boxed());
-                self.next();
-                inner
+                Expr::Cos(try!(self.parse_atom()).boxed())
             },
             Token::Tan => {
                 self.next();
-                let inner = Expr::Tan(try!(self.parse_atom()).boxed());
-                self.next();
-                inner
+                Expr::Tan(try!(self.parse_atom()).boxed())
             },
             Token::Asin => {
                 self.next();
-                let inner = Expr::Asin(try!(self.parse_atom()).boxed());
-                self.next();
-                inner
+                Expr::Asin(try!(self.parse_atom()).boxed())
             },
             Token::Acos => {
                 self.next();
-                let inner = Expr::Acos(try!(self.parse_atom()).boxed());
-                self.next();
-                inner
+                Expr::Acos(try!(self.parse_atom()).boxed())
             },
             Token::Atan => {
                 self.next();
-                let inner = Expr::Atan(try!(self.parse_atom()).boxed());
-                self.next();
-                inner
+                Expr::Atan(try!(self.parse_atom()).boxed())
             },
             Token::LParen => {
                 self.next();

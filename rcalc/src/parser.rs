@@ -220,85 +220,91 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_term<'s>(&'s mut self) -> Result<Expr, String> {
-        let left = try!(self.parse_product());
+        let mut left = try!(self.parse_product());
 
-        let expr = match *self.current() {
-            Token::Plus => {
-                self.next();
-                Expr::Plus(left.boxed(), try!(self.parse_term()).boxed())
-            },
-            Token::Minus => {
-                self.next();
-                Expr::Minus(left.boxed(), try!(self.parse_term()).boxed())
-            },
-            Token::Ampersand => {
-                self.next();
-                Expr::BitwiseAnd(left.boxed(), try!(self.parse_term()).boxed())
-            },
-            Token::VBar => {
-                self.next();
-                Expr::BitwiseOr(left.boxed(), try!(self.parse_term()).boxed())
-            },
-            Token::Caret => {
-                self.next();
-                Expr::BitwiseXor(left.boxed(), try!(self.parse_term()).boxed())
-            },
-            _ => left,
-        };
+        loop {
+            match *self.current() {
+                Token::Plus => {
+                    self.next();
+                    left = Expr::Plus(left.boxed(), try!(self.parse_product()).boxed())
+                },
+                Token::Minus => {
+                    self.next();
+                    left = Expr::Minus(left.boxed(), try!(self.parse_product()).boxed())
+                },
+                Token::Ampersand => {
+                    self.next();
+                    left = Expr::BitwiseAnd(left.boxed(), try!(self.parse_product()).boxed())
+                },
+                Token::VBar => {
+                    self.next();
+                    left = Expr::BitwiseOr(left.boxed(), try!(self.parse_product()).boxed())
+                },
+                Token::Caret => {
+                    self.next();
+                    left = Expr::BitwiseXor(left.boxed(), try!(self.parse_product()).boxed())
+                },
+                _ => break,
+            };
+        }
 
-        Result::Ok(expr)
+        Result::Ok(left)
     }
 
     fn parse_product<'s>(&'s mut self) -> Result<Expr, String> {
-        let left = try!(self.parse_molecule());
+        let mut left = try!(self.parse_molecule());
 
-        let expr = match *self.current() {
-            Token::Star => {
-                self.next();
-                Expr::Times(left.boxed(), try!(self.parse_product()).boxed())
-            },
-            Token::Slash => {
-                self.next();
-                Expr::Div(left.boxed(), try!(self.parse_product()).boxed())
-            },
-            Token::Backslash => {
-                self.next();
-                Expr::IntDiv(left.boxed(), try!(self.parse_product()).boxed())
-            },
-            Token::Percent => {
-                self.next();
-                Expr::Mod(left.boxed(), try!(self.parse_product()).boxed())
-            },
-            Token::LtLt => {
-                self.next();
-                Expr::ShiftLeft(left.boxed(), try!(self.parse_product()).boxed())
-            },
-            Token::GtGt => {
-                self.next();
-                Expr::ShiftRight(left.boxed(), try!(self.parse_product()).boxed())
-            },
-            _ => left,
-        };
+        loop {
+            match *self.current() {
+                Token::Star => {
+                    self.next();
+                    left = Expr::Times(left.boxed(), try!(self.parse_molecule()).boxed())
+                },
+                Token::Slash => {
+                    self.next();
+                    left = Expr::Div(left.boxed(), try!(self.parse_molecule()).boxed())
+                },
+                Token::Backslash => {
+                    self.next();
+                    left = Expr::IntDiv(left.boxed(), try!(self.parse_molecule()).boxed())
+                },
+                Token::Percent => {
+                    self.next();
+                    left = Expr::Mod(left.boxed(), try!(self.parse_molecule()).boxed())
+                },
+                Token::LtLt => {
+                    self.next();
+                    left = Expr::ShiftLeft(left.boxed(), try!(self.parse_molecule()).boxed())
+                },
+                Token::GtGt => {
+                    self.next();
+                    left = Expr::ShiftRight(left.boxed(), try!(self.parse_molecule()).boxed())
+                },
+                _ => break,
+            };
+        }
 
-        Result::Ok(expr)
+        Result::Ok(left)
     }
 
     fn parse_molecule<'s>(&'s mut self) -> Result<Expr, String> {
-        let left = try!(self.parse_atom());
+        let mut left = try!(self.parse_atom());
 
-        let expr = match *self.current() {
-            Token::StarStar => {
-                self.next();
-                Expr::Pow(left.boxed(), try!(self.parse_molecule()).boxed())
-            },
-            Token::Log => {
-                self.next();
-                Expr::Log(left.boxed(), try!(self.parse_molecule()).boxed())
-            },
-            _ => left,
-        };
+        loop {
+            match *self.current() {
+                Token::StarStar => {
+                    self.next();
+                    left = Expr::Pow(left.boxed(), try!(self.parse_atom()).boxed())
+                },
+                Token::Log => {
+                    self.next();
+                    left = Expr::Log(left.boxed(), try!(self.parse_atom()).boxed())
+                },
+                _ => break,
+            };
+        }
 
-        Result::Ok(expr)
+        Result::Ok(left)
     }
 
     // 1

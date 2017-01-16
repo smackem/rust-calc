@@ -20,6 +20,8 @@ fn main() {
     let mut ctx = {
         let mut map: HashMap<String, RuntimeItem> = HashMap::new();
         map.insert(IT_IDENT.to_string(), RuntimeItem::Value(Value::Integer(0)));
+        map.insert("pi".to_string(), RuntimeItem::Value(Value::Float(3.1415926535897932384626433832795)));
+        map.insert("e".to_string(), RuntimeItem::Value(Value::Float(2.7182818284590452353602874713527)));
         interpreter::context_from_hashmap(map)
     };
 

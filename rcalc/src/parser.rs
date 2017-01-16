@@ -29,8 +29,15 @@ pub enum Expr {
     Mod(Box<Expr>, Box<Expr>),
     ShiftLeft(Box<Expr>, Box<Expr>),
     ShiftRight(Box<Expr>, Box<Expr>),
-    Exp(Box<Expr>, Box<Expr>),
+    Pow(Box<Expr>, Box<Expr>),
     Log(Box<Expr>, Box<Expr>),
+    Sqrt(Box<Expr>),
+    Sin(Box<Expr>),
+    Cos(Box<Expr>),
+    Tan(Box<Expr>),
+    Asin(Box<Expr>),
+    Acos(Box<Expr>),
+    Atan(Box<Expr>),
     BindingRef(String),
     FunCall(String, Box<Vec<Expr>>),
     Literal(Value),
@@ -282,7 +289,7 @@ impl<'a> Parser<'a> {
         let expr = match *self.current() {
             Token::StarStar => {
                 self.next();
-                Expr::Exp(left.boxed(), try!(self.parse_molecule()).boxed())
+                Expr::Pow(left.boxed(), try!(self.parse_molecule()).boxed())
             },
             Token::Log => {
                 self.next();
@@ -319,6 +326,48 @@ impl<'a> Parser<'a> {
                     },
                     _ => Expr::BindingRef(ident),
                 }
+            },
+            Token::Sqrt => {
+                self.next();
+                let inner = Expr::Sqrt(try!(self.parse_atom()).boxed());
+                self.next();
+                inner
+            },
+            Token::Sin => {
+                self.next();
+                let inner = Expr::Sin(try!(self.parse_atom()).boxed());
+                self.next();
+                inner
+            },
+            Token::Cos => {
+                self.next();
+                let inner = Expr::Cos(try!(self.parse_atom()).boxed());
+                self.next();
+                inner
+            },
+            Token::Tan => {
+                self.next();
+                let inner = Expr::Tan(try!(self.parse_atom()).boxed());
+                self.next();
+                inner
+            },
+            Token::Asin => {
+                self.next();
+                let inner = Expr::Asin(try!(self.parse_atom()).boxed());
+                self.next();
+                inner
+            },
+            Token::Acos => {
+                self.next();
+                let inner = Expr::Acos(try!(self.parse_atom()).boxed());
+                self.next();
+                inner
+            },
+            Token::Atan => {
+                self.next();
+                let inner = Expr::Atan(try!(self.parse_atom()).boxed());
+                self.next();
+                inner
             },
             Token::LParen => {
                 self.next();
@@ -392,6 +441,30 @@ mod tests {
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt,
                    Stmt::Expr(Expr::Plus(integer_expr(1).boxed(), integer_expr(2).boxed())));
+    }
+
+    #[test]
+    fn test_parse_lassoc_term() {
+        // 2 - 1 - 1 = (2 - 1) - 1
+        let input = vec![Token::Integer(2), Token::Minus, Token::Integer(1), Token::Minus, Token::Integer(1)];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt,
+                   Stmt::Expr(
+                       Expr::Minus(
+                           Expr::Minus(integer_expr(2).boxed(), integer_expr(1).boxed()).boxed(),
+                           integer_expr(1).boxed())));
+    }
+
+    #[test]
+    fn test_parse_lassoc_product() {
+        // 12 / 2 / 2 = (12 / 2) / 2
+        let input = vec![Token::Integer(12), Token::Slash, Token::Integer(2), Token::Slash, Token::Integer(2)];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt,
+                   Stmt::Expr(
+                       Expr::Div(
+                           Expr::Div(integer_expr(12).boxed(), integer_expr(2).boxed()).boxed(),
+                           integer_expr(2).boxed())));
     }
 
     #[test]

@@ -21,6 +21,12 @@ pub enum Token {
     GtGt,
     Log,
     Sqrt,
+    Sin,
+    Cos,
+    Tan,
+    Asin,
+    Acos,
+    Atan,
     Integer(i64),
     Float(f64),
     Ident(String),
@@ -84,6 +90,12 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
          (create_regex(r"^\s*>>"), Box::new(|_| Token::GtGt)),
          (create_regex(r"^\s*log\b"), Box::new(|_| Token::Log)),
          (create_regex(r"^\s*sqrt\b"), Box::new(|_| Token::Sqrt)),
+         (create_regex(r"^\s*sin\b"), Box::new(|_| Token::Sin)),
+         (create_regex(r"^\s*cos\b"), Box::new(|_| Token::Cos)),
+         (create_regex(r"^\s*tan\b"), Box::new(|_| Token::Tan)),
+         (create_regex(r"^\s*asin\b"), Box::new(|_| Token::Asin)),
+         (create_regex(r"^\s*acos\b"), Box::new(|_| Token::Acos)),
+         (create_regex(r"^\s*atan\b"), Box::new(|_| Token::Atan)),
          (create_regex(r"^\s*let\b"), Box::new(|_| Token::Let)),
          (create_regex(r"^\s*[a-zA-z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
 }
@@ -136,7 +148,7 @@ mod tests {
 
     #[test]
     fn test_lex_all_tokens() {
-        let tokens = lex(r"( ) + - * / \ % , = 100 1.25 abc let ** & | ^ << >> log sqrt").unwrap();
+        let tokens = lex(r"( ) + - * / \ % , = 100 1.25 abc let ** & | ^ << >> log sqrt sin cos tan asin acos atan").unwrap();
         assert_eq!(tokens,
                    vec![Token::LParen,
                         Token::RParen,
@@ -160,6 +172,12 @@ mod tests {
                         Token::GtGt,
                         Token::Log,
                         Token::Sqrt,
+                        Token::Sin,
+                        Token::Cos,
+                        Token::Tan,
+                        Token::Asin,
+                        Token::Acos,
+                        Token::Atan,
                         ]);
     }
 

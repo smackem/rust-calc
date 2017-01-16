@@ -64,7 +64,7 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*left, ctx)) << try!(eval_expr(&*right, ctx)),
         Expr::ShiftRight(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) >> try!(eval_expr(&*right, ctx)),
-        Expr::Exp(ref left, ref right) => {
+        Expr::Pow(ref left, ref right) => {
             let l_float = try!(eval_expr(&*left, ctx)).to_float();
             let r_float = try!(eval_expr(&*right, ctx)).to_float();
             Value::Float(l_float.powf(r_float))
@@ -73,6 +73,34 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             let l_float = try!(eval_expr(&*left, ctx)).to_float();
             let r_float = try!(eval_expr(&*right, ctx)).to_float();
             Value::Float(l_float.log(r_float))
+        },
+        Expr::Sqrt(ref inner) => {
+            let v = try!(eval_expr(&*inner, ctx)).to_float();
+            Value::Float(v.sqrt())
+        },
+        Expr::Sin(ref inner) => {
+            let v = try!(eval_expr(&*inner, ctx)).to_float();
+            Value::Float(v.sin())
+        },
+        Expr::Cos(ref inner) => {
+            let v = try!(eval_expr(&*inner, ctx)).to_float();
+            Value::Float(v.cos())
+        },
+        Expr::Tan(ref inner) => {
+            let v = try!(eval_expr(&*inner, ctx)).to_float();
+            Value::Float(v.tan())
+        },
+        Expr::Asin(ref inner) => {
+            let v = try!(eval_expr(&*inner, ctx)).to_float();
+            Value::Float(v.asin())
+        },
+        Expr::Acos(ref inner) => {
+            let v = try!(eval_expr(&*inner, ctx)).to_float();
+            Value::Float(v.acos())
+        },
+        Expr::Atan(ref inner) => {
+            let v = try!(eval_expr(&*inner, ctx)).to_float();
+            Value::Float(v.atan())
         },
         Expr::BindingRef(ref s) => {
             let res = match ctx.get(s) {

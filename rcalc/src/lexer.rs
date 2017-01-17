@@ -68,10 +68,32 @@ pub fn lex(input: &str) -> Result<Vec<Token>, String> {
 
 // ============================================================================
 
+fn strip_string_from_index(s: &str, ch_to_remove: char, start_index: usize, buffer: &mut String) {
+    for ch in s.chars().skip(start_index) {
+        if ch != ch_to_remove {
+            buffer.push(ch);
+        }
+    }
+}
+
 fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
     let create_regex = |s| Regex::new(s).unwrap();
     vec![(create_regex(r"^\s*-?\d+\.\d+"), Box::new(|s| Token::Float(s.trim().parse::<f64>().unwrap()))),
-         (create_regex(r"^\s*-?\d+"), Box::new(|s| Token::Integer(s.trim().parse::<i64>().unwrap()))),
+         (create_regex(r"^\s*0x[0-9a-fA-F][_0-9a-fA-F]*"), Box::new(|s| {
+                     let mut buf = String::new();
+                     strip_string_from_index(s.trim(), '_', 2, &mut buf);
+                     Token::Integer(i64::from_str_radix(&buf, 16).unwrap())
+                 })),
+         (create_regex(r"^\s*0b[01][_01]*"), Box::new(|s| {
+                     let mut buf = String::new();
+                     strip_string_from_index(s.trim(), '_', 2, &mut buf);
+                     Token::Integer(i64::from_str_radix(&buf, 2).unwrap())
+                 })),
+         (create_regex(r"^\s*-?\d[_\d]*"), Box::new(|s| {
+                     let mut buf = String::new();
+                     strip_string_from_index(s.trim(), '_', 0, &mut buf);
+                     Token::Integer(buf.parse::<i64>().unwrap())
+                 })),
          (create_regex(r"^\s*\("), Box::new(|_| Token::LParen)),
          (create_regex(r"^\s*\)"), Box::new(|_| Token::RParen)),
          (create_regex(r"^\s*\+"), Box::new(|_| Token::Plus)),
@@ -103,7 +125,7 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
 #[cfg(test)]
 mod tests {
     use super::*;
-
+    
     #[test]
     fn test_lex_simple() {
         let tokens = lex("1+2").unwrap();
@@ -120,9 +142,23 @@ mod tests {
 
     #[test]
     fn test_lex_with_big_nums() {
-        let tokens = lex("1002 + 123456789").unwrap();
+        let tokens = lex("1_002 + 123_456_789").unwrap();
         assert_eq!(tokens,
-                   vec![Token::Integer(1002), Token::Plus, Token::Integer(123456789)]);
+                   vec![Token::Integer(1002), Token::Plus, Token::Integer(123_456_789)]);
+    }
+
+    #[test]
+    fn test_lex_hex() {
+        let tokens = lex("0xAB12_FFD4_CE01").unwrap();
+        assert_eq!(tokens,
+                   vec![Token::Integer(0xAB12_FFD4_CE01)]);
+    }
+
+    #[test]
+    fn test_lex_bin() {
+        let tokens = lex("0b1001_1100_0101_0011").unwrap();
+        assert_eq!(tokens,
+                   vec![Token::Integer(0b1001_1100_0101_0011)]);
     }
 
     #[test]

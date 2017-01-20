@@ -2,6 +2,8 @@ extern crate regex;
 #[macro_use]
 extern crate lazy_static;
 extern crate num;
+#[macro_use]
+extern crate log;
 
 mod lexer;
 mod parser;
@@ -31,8 +33,13 @@ fn main() {
 
         let line = {
             let mut buf = String::new();
-            io::stdin().read_line(&mut buf).expect("stdin error");
-            buf
+            match io::stdin().read_line(&mut buf) {
+                Ok(_) => buf,
+                Err(e) => {
+                    println!("{:?}", e);
+                    "".to_string()
+                },
+            }
         };
 
         match line.trim() {
@@ -40,11 +47,14 @@ fn main() {
             "" => (),
             line => {
                 match process_line(line, &mut *ctx) {
-                    Ok(Some(item)) => {
-                        println!("= {:?}", item);
-                        ctx.put(IT_IDENT, item);
+                    Ok(item) => {
+                        if let RuntimeItem::Value(v) = item {
+                            print_value(&v);
+                            ctx.put(IT_IDENT, item);
+                        } else {
+                            println!("Function OK");
+                        }
                     },
-                    Ok(None) => println!("OK"),
                     Err(msg) => println!("{}", msg),
                 }
             }
@@ -52,12 +62,23 @@ fn main() {
     }
 }
 
-fn process_line(line: &str, ctx: &mut interpreter::Context) -> Result<Option<RuntimeItem>, String> {
+fn print_value(v: &Value) {
+    match *v {
+        Value::Float(f) => println!("= {}", f),
+        Value::Integer(n) => {
+            println!("= {}", n);
+            println!("  {:#x}", n);
+            println!("  {:#b}", n);
+        },
+    }
+}
+
+fn process_line(line: &str, ctx: &mut interpreter::Context) -> Result<RuntimeItem, String> {
     let input = try!(lexer::lex(&line));
-    println!("Tokens: {:?}", input);
+    info!("Tokens: {:?}", input);
 
     let stmt = try!(parser::parse(&input));
-    println!("Ast: {:?}", stmt);
+    info!("Ast: {:?}", stmt);
 
     interpreter::interpret(&stmt, ctx)
 }

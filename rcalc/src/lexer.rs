@@ -119,7 +119,7 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
          (create_regex(r"^\s*acos\b"), Box::new(|_| Token::Acos)),
          (create_regex(r"^\s*atan\b"), Box::new(|_| Token::Atan)),
          (create_regex(r"^\s*let\b"), Box::new(|_| Token::Let)),
-         (create_regex(r"^\s*[a-zA-z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
+         (create_regex(r"^\s*[a-zA-Z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
 }
 
 #[cfg(test)]

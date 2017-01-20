@@ -2,27 +2,45 @@ use std::collections::HashMap;
 use parser::{Expr, Stmt};
 use value::Value;
 
-#[derive(Debug, PartialEq)]
+/// The entities that result from interpretation and that are stored in a
+/// `Context`.
+#[derive(Debug, PartialEq, Clone)]
 pub enum RuntimeItem {
+    /// A function definition with parameter identifiers and function body
     Function(Vec<String>, Expr),
+    /// The result of an evaluation
     Value(Value),
 }
 
-pub fn interpret(stmt: &Stmt, ctx: &mut Context) -> Result<Option<RuntimeItem>, String> {
+/// Interprets the given `Stmt`, using the specified `Context` for binding
+/// lookup and storage. Returns either the resulting `RuntimeItem` if successful
+/// or an error message.
+///
+/// # Examples
+///
+/// ```
+/// // 1
+/// let stmt = Stmt::Eval(integer_expr(1));
+/// let mut ctx = ctx();
+/// let res = interpret(&stmt, &mut *ctx).unwrap();
+/// assert_eq!(res, RuntimeItem::Value(Value::Integer(1)));
+/// ```
+pub fn interpret(stmt: &Stmt, ctx: &mut Context) -> Result<RuntimeItem, String> {
     let item = match *stmt {
         Stmt::VarBind(ref ident, ref expr) => {
             let val = try!(eval_expr(expr, ctx));
-            ctx.put(ident, RuntimeItem::Value(val));
-            Some(RuntimeItem::Value(val))
+            let item = RuntimeItem::Value(val);
+            ctx.put(ident, item.clone());
+            item
         },
         Stmt::FunBind(ref ident, ref param_idents, ref expr) => {
             let item = RuntimeItem::Function(param_idents.clone(), expr.clone());
-            ctx.put(ident, item);
-            None
+            ctx.put(ident, item.clone());
+            item
         },
         Stmt::Eval(ref expr) => {
             let val = try!(eval_expr(expr, ctx));
-            Some(RuntimeItem::Value(val))
+            RuntimeItem::Value(val)
         },
     };
 
@@ -283,7 +301,7 @@ mod tests {
         let stmt = Stmt::Eval(integer_expr(1));
         let mut ctx = ctx();
         let res = interpret(&stmt, &mut *ctx).unwrap();
-        assert_eq!(res, Some(RuntimeItem::Value(Value::Integer(1))));
+        assert_eq!(res, RuntimeItem::Value(Value::Integer(1)));
     }
 
     #[test]
@@ -292,7 +310,7 @@ mod tests {
         let stmt = Stmt::VarBind("a".to_string(), integer_expr(1));
         let mut ctx = ctx();
         let res = interpret(&stmt, &mut *ctx).unwrap();
-        assert_eq!(res, Some(RuntimeItem::Value(Value::Integer(1))));
+        assert_eq!(res, RuntimeItem::Value(Value::Integer(1)));
         assert_eq!(ctx.get("a"), Some(&RuntimeItem::Value(Value::Integer(1))));
     }
 
@@ -302,7 +320,7 @@ mod tests {
         let stmt = Stmt::FunBind("f".to_string(), vec![], integer_expr(1));
         let mut ctx = ctx();
         let res = interpret(&stmt, &mut *ctx).unwrap();
-        assert_eq!(res, None);
+        assert_eq!(res, RuntimeItem::Function(vec![], integer_expr(1)));
         assert_eq!(ctx.get("f"), Some(&RuntimeItem::Function(vec![], integer_expr(1))));
     }
 
@@ -314,7 +332,7 @@ mod tests {
                                  Expr::BindingRef("x".to_string()));
         let mut ctx = ctx();
         let res = interpret(&stmt, &mut *ctx).unwrap();
-        assert_eq!(res, None);
+        assert_eq!(res, RuntimeItem::Function(vec!["x".to_string()], Expr::BindingRef("x".to_string())));
         assert_eq!(ctx.get("f"),
                    Some(&RuntimeItem::Function(vec!["x".to_string()], Expr::BindingRef("x".to_string()))));
     }

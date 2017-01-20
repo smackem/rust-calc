@@ -110,7 +110,7 @@ impl<'a> Parser<'a> {
             &self.input[self.index]
         };
 
-        println!("current: {:?}", token);
+        trace!("current: {:?}", token);
         token
     }
 

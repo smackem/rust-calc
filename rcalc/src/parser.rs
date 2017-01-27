@@ -312,17 +312,17 @@ impl<'a> Parser<'a> {
     // f(1)
     // ^
     fn parse_atom<'s>(&'s mut self) -> Result<Expr, String> {
-        let expr = match *self.current() {
-            Token::Integer(n) => {
-                self.next();
-                integer_expr(n)
-            },
-            Token::Float(f) => {
-                self.next();
-                float_expr(f)
-            },
+        let expr = match *self.next() {
+            Token::Integer(n) => integer_expr(n),
+            Token::Float(f) => float_expr(f),
+            Token::Sqrt => Expr::Sqrt(try!(self.parse_atom()).boxed()),
+            Token::Sin => Expr::Sin(try!(self.parse_atom()).boxed()),
+            Token::Cos => Expr::Cos(try!(self.parse_atom()).boxed()),
+            Token::Tan => Expr::Tan(try!(self.parse_atom()).boxed()),
+            Token::Asin => Expr::Asin(try!(self.parse_atom()).boxed()),
+            Token::Acos => Expr::Acos(try!(self.parse_atom()).boxed()),
+            Token::Atan => Expr::Atan(try!(self.parse_atom()).boxed()),
             Token::Ident(ref s) => {
-                self.next();
                 let ident = s.clone();
                 match *self.current() {
                     Token::LParen => {
@@ -333,36 +333,7 @@ impl<'a> Parser<'a> {
                     _ => Expr::BindingRef(ident),
                 }
             },
-            Token::Sqrt => {
-                self.next();
-                Expr::Sqrt(try!(self.parse_atom()).boxed())
-            },
-            Token::Sin => {
-                self.next();
-                Expr::Sin(try!(self.parse_atom()).boxed())
-            },
-            Token::Cos => {
-                self.next();
-                Expr::Cos(try!(self.parse_atom()).boxed())
-            },
-            Token::Tan => {
-                self.next();
-                Expr::Tan(try!(self.parse_atom()).boxed())
-            },
-            Token::Asin => {
-                self.next();
-                Expr::Asin(try!(self.parse_atom()).boxed())
-            },
-            Token::Acos => {
-                self.next();
-                Expr::Acos(try!(self.parse_atom()).boxed())
-            },
-            Token::Atan => {
-                self.next();
-                Expr::Atan(try!(self.parse_atom()).boxed())
-            },
             Token::LParen => {
-                self.next();
                 let inner = try!(self.parse_term());
                 try!(self.assert_current(Token::RParen));
                 self.next();

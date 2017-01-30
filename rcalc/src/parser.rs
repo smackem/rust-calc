@@ -29,6 +29,7 @@ pub enum Expr {
     Mod(Box<Expr>, Box<Expr>),
     ShiftLeft(Box<Expr>, Box<Expr>),
     ShiftRight(Box<Expr>, Box<Expr>),
+    Neg(Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
     Log(Box<Expr>, Box<Expr>),
     Sqrt(Box<Expr>),
@@ -315,6 +316,7 @@ impl<'a> Parser<'a> {
         let expr = match *self.next() {
             Token::Integer(n) => integer_expr(n),
             Token::Float(f) => float_expr(f),
+            Token::Minus => Expr::Neg(try!(self.parse_atom()).boxed()),
             Token::Sqrt => Expr::Sqrt(try!(self.parse_atom()).boxed()),
             Token::Sin => Expr::Sin(try!(self.parse_atom()).boxed()),
             Token::Cos => Expr::Cos(try!(self.parse_atom()).boxed()),
@@ -619,5 +621,20 @@ mod tests {
                    Stmt::Eval(Expr::FunCall("f".to_string(),
                               Box::new(vec![integer_expr(1),
                                             Expr::Plus(integer_expr(2).boxed(), integer_expr(3).boxed())]))));
+    }
+    
+    #[test]
+    fn test_atoms() {
+        let input = vec![Token::Sqrt, Token::Integer(16)];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt, Stmt::Eval(Expr::Sqrt(integer_expr(16).boxed())));
+
+        let input = vec![Token::Minus, Token::Integer(10)];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt, Stmt::Eval(Expr::Neg(integer_expr(10).boxed())));
+
+        let input = vec![Token::Minus, Token::Sin, Token::Integer(10)];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt, Stmt::Eval(Expr::Neg(Expr::Sin(integer_expr(10).boxed()).boxed())));
     }
 }

@@ -241,6 +241,25 @@ impl Shr<Value> for Value {
     }
 }
 
+impl Neg for Value {
+    type Output = Value;
+
+    /// The method for the unary `-` operator.
+    /// Negates `Value` `self`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(-Value::Integer(10), Value::Integer(-10));
+    /// ```
+    fn neg(self) -> Value {
+        match self {
+            Value::Integer(n) => Value::Integer(-n),
+            Value::Float(f) => Value::Float(-f),
+        }
+    }
+}
+
 // ===========================================================================
 
 #[cfg(test)]
@@ -293,5 +312,11 @@ mod tests {
         assert_eq!(Value::Integer(7) % Value::Float(3.0), Value::Float(1.0));
         assert_eq!(Value::Float(7.0) % Value::Integer(3), Value::Float(1.0));
         assert_eq!(Value::Float(7.0) % Value::Float(3.0), Value::Float(1.0));
+    }
+    
+    #[test]
+    fn test_neg() {
+        assert_eq!(-Value::Integer(10), Value::Integer(-10));
+        assert_eq!(-Value::Float(-10.25), Value::Float(10.25));
     }
 }

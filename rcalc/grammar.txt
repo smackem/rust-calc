@@ -42,6 +42,7 @@ atom:
     IDENTIFIER
     IDENTIFIER '(' expr-list ')'
     IDENTIFIER '(' ')'
+    '-' atom
     'sqrt' atom
     'sin' atom
     'cos' atom

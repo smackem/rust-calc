@@ -92,6 +92,8 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             let r_float = try!(eval_expr(&*right, ctx)).to_float();
             Value::Float(l_float.log(r_float))
         },
+        Expr::Neg(ref inner) =>
+            -try!(eval_expr(&*inner, ctx)),
         Expr::Sqrt(ref inner) => {
             let v = try!(eval_expr(&*inner, ctx)).to_float();
             Value::Float(v.sqrt())
@@ -257,6 +259,14 @@ mod tests {
                         Expr::Minus(integer_expr(5).boxed(), float_expr(3.0).boxed()).boxed());
         let res = eval_expr(&expr, &mut *ctx()).unwrap();
         assert_eq!(res, Value::Float(6.0));
+    }
+
+    #[test]
+    fn test_eval_negate() {
+        // 1 - -2
+        let expr = Expr::Minus(integer_expr(1).boxed(), Expr::Neg(integer_expr(2).boxed()).boxed());
+        let res = eval_expr(&expr, &mut *ctx()).unwrap();
+        assert_eq!(res, Value::Integer(3));
     }
 
     #[test]

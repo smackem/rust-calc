@@ -78,7 +78,7 @@ fn strip_string_from_index(s: &str, ch_to_remove: char, start_index: usize, buff
 
 fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
     let create_regex = |s| Regex::new(s).unwrap();
-    vec![(create_regex(r"^\s*-?\d+\.\d+"), Box::new(|s| Token::Float(s.trim().parse::<f64>().unwrap()))),
+    vec![(create_regex(r"^\s*\d+\.\d+"), Box::new(|s| Token::Float(s.trim().parse::<f64>().unwrap()))),
          (create_regex(r"^\s*0x[0-9a-fA-F][_0-9a-fA-F]*"), Box::new(|s| {
                      let mut buf = String::new();
                      strip_string_from_index(s.trim(), '_', 2, &mut buf);
@@ -89,7 +89,7 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
                      strip_string_from_index(s.trim(), '_', 2, &mut buf);
                      Token::Integer(i64::from_str_radix(&buf, 2).unwrap())
                  })),
-         (create_regex(r"^\s*-?\d[_\d]*"), Box::new(|s| {
+         (create_regex(r"^\s*\d[_\d]*"), Box::new(|s| {
                      let mut buf = String::new();
                      strip_string_from_index(s.trim(), '_', 0, &mut buf);
                      Token::Integer(buf.parse::<i64>().unwrap())
@@ -172,14 +172,21 @@ mod tests {
     fn test_lex_with_negative_integer() {
         let tokens = lex("- -123").unwrap();
         assert_eq!(tokens,
-                   vec![Token::Minus, Token::Integer(-123)]);
+                   vec![Token::Minus, Token::Minus, Token::Integer(123)]);
+    }
+
+    #[test]
+    fn test_lex_with_negative_float() {
+        let tokens = lex("-123.25").unwrap();
+        assert_eq!(tokens,
+                   vec![Token::Minus, Token::Float(123.25)]);
     }
 
     #[test]
     fn test_lex_float() {
-        let tokens = lex("1.0 -123.5 1003.125").unwrap();
+        let tokens = lex("1.0 123.5 1003.125").unwrap();
         assert_eq!(tokens,
-                   vec![Token::Float(1.0), Token::Float(-123.5), Token::Float(1003.125)]);
+                   vec![Token::Float(1.0), Token::Float(123.5), Token::Float(1003.125)]);
     }
 
     #[test]

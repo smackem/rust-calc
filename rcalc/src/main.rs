@@ -14,18 +14,39 @@ use std::collections::HashMap;
 use std::io;
 use std::io::Write;
 use value::Value;
-use interpreter::RuntimeItem;
+use interpreter::{ RuntimeItem, Context };
 
 static IT_IDENT: &'static str = "it";
 
+struct Calculator {
+    ctx: Box<Context>,
+}
+
+impl Calculator {
+    pub fn new() -> Calculator {
+        let mut ctx = {
+            let mut map: HashMap<String, RuntimeItem> = HashMap::new();
+            map.insert(IT_IDENT.to_string(), RuntimeItem::Value(Value::Integer(0)));
+            map.insert("pi".to_string(), RuntimeItem::Value(Value::Float(3.1415926535897932384626433832795)));
+            map.insert("e".to_string(), RuntimeItem::Value(Value::Float(2.7182818284590452353602874713527)));
+            interpreter::context_from_hashmap(map)
+        };
+        Calculator { ctx: ctx }
+    }
+
+    fn calc(&mut self, src: &str) -> Result<RuntimeItem, String> {
+        let input = try!(lexer::lex(&src));
+        info!("Tokens: {:?}", input);
+
+        let stmt = try!(parser::parse(&input));
+        info!("Ast: {:?}", stmt);
+
+        interpreter::interpret(&stmt, &mut *self.ctx)
+    }
+}
+
 fn main() {
-    let mut ctx = {
-        let mut map: HashMap<String, RuntimeItem> = HashMap::new();
-        map.insert(IT_IDENT.to_string(), RuntimeItem::Value(Value::Integer(0)));
-        map.insert("pi".to_string(), RuntimeItem::Value(Value::Float(3.1415926535897932384626433832795)));
-        map.insert("e".to_string(), RuntimeItem::Value(Value::Float(2.7182818284590452353602874713527)));
-        interpreter::context_from_hashmap(map)
-    };
+    let mut calculator = Calculator::new();
 
     loop {
         print!("> ");
@@ -46,7 +67,7 @@ fn main() {
             "#q" => break,
             "" => (),
             line => {
-                match process_line(line, &mut *ctx) {
+                match calculator.calc(line) {
                     Ok(item) => {
                         if let RuntimeItem::Value(v) = item {
                             print_value(&v);
@@ -71,14 +92,4 @@ fn print_value(v: &Value) {
             println!("  {:#b}", n);
         },
     }
-}
-
-fn process_line(line: &str, ctx: &mut interpreter::Context) -> Result<RuntimeItem, String> {
-    let input = try!(lexer::lex(&line));
-    info!("Tokens: {:?}", input);
-
-    let stmt = try!(parser::parse(&input));
-    info!("Ast: {:?}", stmt);
-
-    interpreter::interpret(&stmt, ctx)
 }

@@ -15,42 +15,14 @@ use std::ops::*;
 /// * `Integer` \ `Integer` = `Integer`
 ///   `Integer` \ `Float` = `Integer`
 ///   `Float` \ `Float` = `Integer`
-#[derive(Copy, Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Value {
     Integer(i64),
     Float(f64),
+    Vector(Box<Vec<Value>>),
 }
 
 impl Value {
-    /// Returns the contained value as `f64` with possible loss of precision for very large values.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(12).to_float(), Value::Float(12.0));
-    /// ```
-    pub fn to_float(&self) -> f64 {
-        match *self {
-            Value::Integer(n) => n as f64,
-            Value::Float(f) => f,
-        }
-    }
-
-    /// Returns the contained value as `i64`, truncating the fractional part if the contained
-    /// value is a `Float`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Float(12.3).to_integer(), Value::Integer(12));
-    /// ```
-    pub fn to_integer(&self) -> i64 {
-        match *self {
-            Value::Integer(n) => n,
-            Value::Float(f) => f as i64,
-        }
-    }
-
     /// Converts `self` to integer, divides it by `other` (also converted to integer) and
     /// returns the result.
     ///
@@ -59,8 +31,47 @@ impl Value {
     /// ```
     /// assert_eq!(Value::Float(12.3).integer_divide_by(&Value::Integer(3)), Value::Integer(4));
     /// ```
-    pub fn integer_divide_by(&self, other: Value) -> Value {
-        Value::Integer(self.to_integer() / other.to_integer())
+    pub fn integer_divide_by(&self, other: &Value) -> Value {
+        match (self, other) {
+            (&Value::Integer(l), &Value::Integer(r)) => Value::Integer(l / r),
+            (ref lv, ref rv) => Value::Integer(lv.to_integer() / rv.to_integer()),
+        }
+    }
+
+    pub fn pow(&self, exponent: &Value) -> Value {
+        Value::Float(self.to_float().powf(exponent.to_float()))
+    }
+
+    pub fn log(&self, base: &Value) -> Value {
+        Value::Float(self.to_float().log(base.to_float()))
+    }
+
+    pub fn sqrt(&self) -> Value {
+        Value::Float(self.to_float().sqrt())
+    }
+
+    pub fn sin(&self) -> Value {
+        Value::Float(self.to_float().sin())
+    }
+
+    pub fn cos(&self) -> Value {
+        Value::Float(self.to_float().cos())
+    }
+
+    pub fn tan(&self) -> Value {
+        Value::Float(self.to_float().tan())
+    }
+
+    pub fn asin(&self) -> Value {
+        Value::Float(self.to_float().asin())
+    }
+
+    pub fn acos(&self) -> Value {
+        Value::Float(self.to_float().acos())
+    }
+
+    pub fn atan(&self) -> Value {
+        Value::Float(self.to_float().atan())
     }
 }
 
@@ -262,6 +273,37 @@ impl Neg for Value {
 
 // ===========================================================================
 
+impl Value {
+    /// Returns the contained value as `f64` with possible loss of precision for very large values.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Integer(12).to_float(), Value::Float(12.0));
+    /// ```
+    fn to_float(&self) -> f64 {
+        match *self {
+            Value::Integer(n) => n as f64,
+            Value::Float(f) => f,
+        }
+    }
+
+    /// Returns the contained value as `i64`, truncating the fractional part if the contained
+    /// value is a `Float`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!(Value::Float(12.3).to_integer(), Value::Integer(12));
+    /// ```
+    fn to_integer(&self) -> i64 {
+        match *self {
+            Value::Integer(n) => n,
+            Value::Float(f) => f as i64,
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -300,10 +342,10 @@ mod tests {
 
     #[test]
     fn test_integer_div() {
-        assert_eq!(Value::Integer(7).integer_divide_by(Value::Integer(3)), Value::Integer(2));
-        assert_eq!(Value::Integer(7).integer_divide_by(Value::Float(3.0)), Value::Integer(2));
-        assert_eq!(Value::Float(7.0).integer_divide_by(Value::Integer(3)), Value::Integer(2));
-        assert_eq!(Value::Float(7.0).integer_divide_by(Value::Float(3.0)), Value::Integer(2));
+        assert_eq!(Value::Integer(7).integer_divide_by(&Value::Integer(3)), Value::Integer(2));
+        assert_eq!(Value::Integer(7).integer_divide_by(&Value::Float(3.0)), Value::Integer(2));
+        assert_eq!(Value::Float(7.0).integer_divide_by(&Value::Integer(3)), Value::Integer(2));
+        assert_eq!(Value::Float(7.0).integer_divide_by(&Value::Float(3.0)), Value::Integer(2));
     }
 
     #[test]

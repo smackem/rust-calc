@@ -75,58 +75,38 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
         Expr::Div(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) / try!(eval_expr(&*right, ctx)),
         Expr::IntDiv(ref left, ref right) =>
-            try!(eval_expr(&*left, ctx)).integer_divide_by(try!(eval_expr(&*right, ctx))),
+            try!(eval_expr(&*left, ctx)).integer_divide_by(&try!(eval_expr(&*right, ctx))),
         Expr::Mod(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) % try!(eval_expr(&*right, ctx)),
         Expr::ShiftLeft(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) << try!(eval_expr(&*right, ctx)),
         Expr::ShiftRight(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) >> try!(eval_expr(&*right, ctx)),
-        Expr::Pow(ref left, ref right) => {
-            let l_float = try!(eval_expr(&*left, ctx)).to_float();
-            let r_float = try!(eval_expr(&*right, ctx)).to_float();
-            Value::Float(l_float.powf(r_float))
-        },
-        Expr::Log(ref left, ref right) => {
-            let l_float = try!(eval_expr(&*left, ctx)).to_float();
-            let r_float = try!(eval_expr(&*right, ctx)).to_float();
-            Value::Float(l_float.log(r_float))
-        },
+        Expr::Pow(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)).pow(&try!(eval_expr(&*right, ctx))),
+        Expr::Log(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)).log(&try!(eval_expr(&*right, ctx))),
         Expr::Neg(ref inner) =>
             -try!(eval_expr(&*inner, ctx)),
-        Expr::Sqrt(ref inner) => {
-            let v = try!(eval_expr(&*inner, ctx)).to_float();
-            Value::Float(v.sqrt())
-        },
-        Expr::Sin(ref inner) => {
-            let v = try!(eval_expr(&*inner, ctx)).to_float();
-            Value::Float(v.sin())
-        },
-        Expr::Cos(ref inner) => {
-            let v = try!(eval_expr(&*inner, ctx)).to_float();
-            Value::Float(v.cos())
-        },
-        Expr::Tan(ref inner) => {
-            let v = try!(eval_expr(&*inner, ctx)).to_float();
-            Value::Float(v.tan())
-        },
-        Expr::Asin(ref inner) => {
-            let v = try!(eval_expr(&*inner, ctx)).to_float();
-            Value::Float(v.asin())
-        },
-        Expr::Acos(ref inner) => {
-            let v = try!(eval_expr(&*inner, ctx)).to_float();
-            Value::Float(v.acos())
-        },
-        Expr::Atan(ref inner) => {
-            let v = try!(eval_expr(&*inner, ctx)).to_float();
-            Value::Float(v.atan())
-        },
+        Expr::Sqrt(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).sqrt(),
+        Expr::Sin(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).sin(),
+        Expr::Cos(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).cos(),
+        Expr::Tan(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).tan(),
+        Expr::Asin(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).asin(),
+        Expr::Acos(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).acos(),
+        Expr::Atan(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).atan(),
         Expr::BindingRef(ref s) => {
             let res = match ctx.get(s) {
                 Some(item) => {
                     match *item {
-                        RuntimeItem::Value(ref v) => Result::Ok(*v),
+                        RuntimeItem::Value(ref v) => Result::Ok(v.clone()),
                         _ => Result::Err(format!("'{}' is not a value", s)),
                     }
                 },
@@ -147,7 +127,7 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             };
             try!(res)
         },
-        Expr::Literal(ref v) => *v,
+        Expr::Literal(ref v) => v.clone(),
     };
 
     Result::Ok(val)

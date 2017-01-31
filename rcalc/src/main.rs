@@ -48,11 +48,16 @@ fn main() {
             line => {
                 match process_line(line, &mut *ctx) {
                     Ok(item) => {
-                        if let RuntimeItem::Value(v) = item {
-                            print_value(&v);
-                            ctx.put(IT_IDENT, item);
+                        let store_it = if let RuntimeItem::Value(ref v) = item {
+                            print_value(v);
+                            true
                         } else {
                             println!("Function OK");
+                            false
+                        };
+
+                        if store_it {
+                            ctx.put(IT_IDENT, item);
                         }
                     },
                     Err(msg) => println!("{}", msg),

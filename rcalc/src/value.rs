@@ -19,7 +19,7 @@ use std::ops::*;
 pub enum Value {
     Integer(i64),
     Float(f64),
-    Vector(Box<Vec<Value>>),
+    //Vector(Box<Vec<Value>>),
 }
 
 impl Value {

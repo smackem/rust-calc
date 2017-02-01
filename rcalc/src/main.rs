@@ -24,7 +24,7 @@ struct Calculator {
 
 impl Calculator {
     pub fn new() -> Calculator {
-        let mut ctx = {
+        let ctx = {
             let mut map: HashMap<String, RuntimeItem> = HashMap::new();
             map.insert(IT_IDENT.to_string(), RuntimeItem::Value(Value::Integer(0)));
             map.insert("pi".to_string(), RuntimeItem::Value(Value::Float(3.1415926535897932384626433832795)));
@@ -34,14 +34,16 @@ impl Calculator {
         Calculator { ctx: ctx }
     }
 
-    fn calc(&mut self, src: &str) -> Result<RuntimeItem, String> {
+    pub fn calc(&mut self, src: &str) -> Result<&RuntimeItem, String> {
         let input = try!(lexer::lex(&src));
         info!("Tokens: {:?}", input);
 
         let stmt = try!(parser::parse(&input));
         info!("Ast: {:?}", stmt);
 
-        interpreter::interpret(&stmt, &mut *self.ctx)
+        let item = try!(interpreter::interpret(&stmt, &mut *self.ctx));
+        self.ctx.put(IT_IDENT, item);
+        Result::Ok(self.ctx.get(IT_IDENT).unwrap())
     }
 }
 
@@ -69,17 +71,11 @@ fn main() {
             line => {
                 match calculator.calc(line) {
                     Ok(item) => {
-                        let store_it = if let RuntimeItem::Value(ref v) = item {
+                        if let &RuntimeItem::Value(ref v) = item {
                             print_value(v);
-                            true
                         } else {
                             println!("Function OK");
-                            false
                         };
-
-                        if store_it {
-                            ctx.put(IT_IDENT, item);
-                        }
                     },
                     Err(msg) => println!("{}", msg),
                 }

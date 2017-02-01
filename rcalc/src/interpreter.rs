@@ -209,6 +209,7 @@ mod tests {
     use super::*;
     use parser::{Expr, Stmt, integer_expr, float_expr};
     use value::Value;
+    use util::Boxable;
     use std::collections::HashMap;
 
     fn ctx() -> Box<Context> {

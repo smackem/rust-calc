@@ -12,6 +12,7 @@ identifier-list:
     IDENTIFIER
 
 expr:
+    term '@' expr
     term
 
 term:
@@ -29,6 +30,7 @@ product:
     molecule '%' product
     molecule '<<' product
     molecule '>>' product
+    molecule 'dot' product
     molecule 
 
 molecule:
@@ -50,6 +52,11 @@ atom:
     'asin' atom
     'acos' atom
     'atan' atom
+    'len' atom
+    'count' atom
+    '[' expr-list ']'
+    '[' expr '..' expr ']'
+    '[' expr '..' expr ':' expr ']'
     '(' expr ')'
 
 expr-list:

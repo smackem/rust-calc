@@ -9,6 +9,7 @@ mod lexer;
 mod parser;
 mod value;
 mod interpreter;
+mod util;
 
 use std::collections::HashMap;
 use std::io;
@@ -68,13 +69,14 @@ fn main() {
 }
 
 fn print_value(v: &Value) {
-    match *v {
-        Value::Float(f) => println!("= {}", f),
-        Value::Integer(n) => {
+    match v {
+        &Value::Float(f) => println!("= {}", f),
+        &Value::Integer(n) => {
             println!("= {}", n);
             println!("  {:#x}", n);
             println!("  {:#b}", n);
         },
+        &Value::Vector(ref v) => println!("= {:?}", *v),
     }
 }
 

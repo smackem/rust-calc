@@ -1,5 +1,6 @@
 use lexer::Token;
 use value::Value;
+use util::Boxable;
 
 /// Defines the syntax elements that can be the AST root.
 #[derive(Debug, PartialEq)]
@@ -42,13 +43,6 @@ pub enum Expr {
     BindingRef(String),
     FunCall(String, Box<Vec<Expr>>),
     Literal(Value),
-}
-
-impl Expr {
-    /// Convenience method that returns a `Box` containing the `Expr`.
-    pub fn boxed(self) -> Box<Self> {
-        Box::new(self)
-    }
 }
 
 /// Parses the given input and returns the AST.
@@ -390,6 +384,7 @@ impl<'a> Parser<'a> {
 mod tests {
     use super::*;
     use lexer::Token;
+    use util::Boxable;
 
     #[test]
     fn test_parse_atom() {

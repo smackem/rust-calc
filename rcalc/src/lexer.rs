@@ -19,6 +19,14 @@ pub enum Token {
     Caret,
     LtLt,
     GtGt,
+    At,
+    DotDot,
+    LBracket,
+    RBracket,
+    Colon,
+    DotWord,
+    Len,
+    Count,
     Log,
     Sqrt,
     Sin,
@@ -110,6 +118,11 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
          (create_regex(r"^\s*\^"), Box::new(|_| Token::Caret)),
          (create_regex(r"^\s*<<"), Box::new(|_| Token::LtLt)),
          (create_regex(r"^\s*>>"), Box::new(|_| Token::GtGt)),
+         (create_regex(r"^\s*\.\."), Box::new(|_| Token::DotDot)),
+         (create_regex(r"^\s*:"), Box::new(|_| Token::Colon)),
+         (create_regex(r"^\s*@"), Box::new(|_| Token::At)),
+         (create_regex(r"^\s*\["), Box::new(|_| Token::LBracket)),
+         (create_regex(r"^\s*\]"), Box::new(|_| Token::RBracket)),
          (create_regex(r"^\s*log\b"), Box::new(|_| Token::Log)),
          (create_regex(r"^\s*sqrt\b"), Box::new(|_| Token::Sqrt)),
          (create_regex(r"^\s*sin\b"), Box::new(|_| Token::Sin)),
@@ -119,6 +132,9 @@ fn token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
          (create_regex(r"^\s*acos\b"), Box::new(|_| Token::Acos)),
          (create_regex(r"^\s*atan\b"), Box::new(|_| Token::Atan)),
          (create_regex(r"^\s*let\b"), Box::new(|_| Token::Let)),
+         (create_regex(r"^\s*dot\b"), Box::new(|_| Token::DotWord)),
+         (create_regex(r"^\s*len\b"), Box::new(|_| Token::Len)),
+         (create_regex(r"^\s*count\b"), Box::new(|_| Token::Count)),
          (create_regex(r"^\s*[a-zA-Z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
 }
 
@@ -191,7 +207,7 @@ mod tests {
 
     #[test]
     fn test_lex_all_tokens() {
-        let tokens = lex(r"( ) + - * / \ % , = 100 1.25 abc let ** & | ^ << >> log sqrt sin cos tan asin acos atan").unwrap();
+        let tokens = lex(r"( ) + - * / \ % , =").unwrap();
         assert_eq!(tokens,
                    vec![Token::LParen,
                         Token::RParen,
@@ -203,7 +219,10 @@ mod tests {
                         Token::Percent,
                         Token::Comma,
                         Token::Eq,
-                        Token::Integer(100),
+                        ]);
+        let tokens = lex(r"100 1.25 abc let ** & | ^ << >>").unwrap();
+        assert_eq!(tokens,
+                   vec![Token::Integer(100),
                         Token::Float(1.25),
                         Token::Ident("abc".to_string()),
                         Token::Let,
@@ -213,7 +232,10 @@ mod tests {
                         Token::Caret,
                         Token::LtLt,
                         Token::GtGt,
-                        Token::Log,
+                        ]);
+        let tokens = lex(r"log sqrt sin cos tan asin acos atan").unwrap();
+        assert_eq!(tokens,
+                   vec![Token::Log,
                         Token::Sqrt,
                         Token::Sin,
                         Token::Cos,
@@ -221,6 +243,16 @@ mod tests {
                         Token::Asin,
                         Token::Acos,
                         Token::Atan,
+                        ]);
+        let tokens = lex(r"[ ] .. : dot len count").unwrap();
+        assert_eq!(tokens,
+                   vec![Token::LBracket,
+                        Token::RBracket,
+                        Token::DotDot,
+                        Token::Colon,
+                        Token::DotWord,
+                        Token::Len,
+                        Token::Count,
                         ]);
     }
 

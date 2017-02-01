@@ -16,11 +16,13 @@ use util::Boxable;
 /// * `Integer` \ `Integer` = `Integer`
 ///   `Integer` \ `Float` = `Integer`
 ///   `Float` \ `Float` = `Integer`
+/// * `[a1,a2]` *op* `Integer` = `[a1*Integer, a2*Integer]
+/// * `[a1,a2]` *op* `[b1,b2]` = `[a1*b1, a2*b2]`
 #[derive(Clone, PartialEq, Debug)]
 pub enum Value {
     Integer(i64),
     Float(f64),
-    //Vector(Box<Vec<Value>>),
+    Vector(Box<Vec<Value>>),
 }
 
 impl Value {

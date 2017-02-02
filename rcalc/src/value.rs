@@ -39,6 +39,13 @@ impl Value {
         self.apply_binary_op(other, |l, r| Value::Integer(l.to_integer() / r.to_integer()))
     }
 
+    pub fn concat(&self, other: &Value) -> Value {
+        let mut lv = (*self.to_vector()).clone();
+        let mut rv = (*other.to_vector()).clone();
+        lv.append(&mut rv);
+        Value::Vector(lv.rc())
+    }
+
     pub fn pow(&self, exponent: &Value) -> Value {
         self.apply_binary_op(exponent, |l, r| Value::Float(l.to_float().powf(r.to_float()))) 
     }
@@ -326,12 +333,16 @@ impl Value {
         match self {
             &Value::Integer(n) => n,
             &Value::Float(f) => f as i64,
-            &Value::Vector(ref v) => (*v).len() as i64,
+            &Value::Vector(ref v) => v.len() as i64,
         }
     }
 
-    fn to_vector(&self) -> Vec<Value> {
-        
+    fn to_vector(&self) -> Rc<Vec<Value>> {
+        match self {
+            &Value::Integer(n) => vec![Value::Integer(n)].rc(),
+            &Value::Float(f) => vec![Value::Float(f)].rc(),
+            &Value::Vector(ref v) => v.clone(),
+        }
     }
 
     fn apply_binary_op<F>(&self, r: &Value, f: F) -> Value

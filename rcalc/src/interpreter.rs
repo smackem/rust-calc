@@ -87,6 +87,8 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*left, ctx)).pow(&try!(eval_expr(&*right, ctx))),
         Expr::Log(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)).log(&try!(eval_expr(&*right, ctx))),
+        Expr::Concat(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)).concat(&try!(eval_expr(&*right, ctx))),
         Expr::Neg(ref inner) =>
             -try!(eval_expr(&*inner, ctx)),
         Expr::Sqrt(ref inner) =>

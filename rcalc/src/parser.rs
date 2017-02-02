@@ -19,6 +19,7 @@ pub enum Stmt {
 /// Defines the syntax elements that make up the expression part of the AST.
 #[derive(Debug, PartialEq, Clone)]
 pub enum Expr {
+    Concat(Box<Expr>, Box<Expr>),
     Plus(Box<Expr>, Box<Expr>),
     Minus(Box<Expr>, Box<Expr>),
     BitwiseAnd(Box<Expr>, Box<Expr>),
@@ -42,6 +43,7 @@ pub enum Expr {
     Atan(Box<Expr>),
     BindingRef(String),
     FunCall(String, Box<Vec<Expr>>),
+    Vector(Box<Vec<Expr>>),
     Literal(Value),
 }
 
@@ -211,7 +213,19 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expr<'s>(&'s mut self) -> Result<Expr, String> {
-        self.parse_term()
+        let mut left = try!(self.parse_term());
+
+        loop {
+            match *self.current() {
+                Token::At => {
+                    self.next();
+                    left = Expr::Concat(left.boxed(), try!(self.parse_term()).boxed())
+                },
+                _ => break,
+            };
+        }
+
+        Result::Ok(left)
     }
 
     fn parse_term<'s>(&'s mut self) -> Result<Expr, String> {
@@ -303,8 +317,13 @@ impl<'a> Parser<'a> {
     }
 
     // 1
+    // -4
+    // sin 3.14
+    // x
     // f()
     // f(1)
+    // [1, 2]
+    // (1 + 2)
     // ^
     fn parse_atom<'s>(&'s mut self) -> Result<Expr, String> {
         let expr = match *self.next() {
@@ -324,11 +343,17 @@ impl<'a> Parser<'a> {
                     Token::LParen => {
                         self.next();
                         let args = try!(self.parse_fun_call());
-                        Expr::FunCall(ident, Box::new(args))
+                        Expr::FunCall(ident, args.boxed())
                     },
                     _ => Expr::BindingRef(ident),
                 }
             },
+            Token::LBracket => {
+                let exprs = try!(self.parse_expr_list());
+                try!(self.assert_current(Token::RBracket));
+                self.next();
+                Expr::Vector(exprs.boxed())
+            }
             Token::LParen => {
                 let inner = try!(self.parse_term());
                 try!(self.assert_current(Token::RParen));

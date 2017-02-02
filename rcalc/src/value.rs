@@ -1,4 +1,5 @@
 use std::ops::*;
+use std::rc::Rc;
 use util::Boxable;
 
 /// Defines the possible types of values to process.
@@ -22,7 +23,7 @@ use util::Boxable;
 pub enum Value {
     Integer(i64),
     Float(f64),
-    Vector(Box<Vec<Value>>),
+    Vector(Rc<Vec<Value>>),
 }
 
 impl Value {
@@ -289,7 +290,7 @@ impl Neg for Value {
                 let resv: Vec<Value> = (*v).iter()
                     .map(|val| val.clone().neg())
                     .collect();
-                Value::Vector(resv.boxed())
+                Value::Vector(resv.rc())
             },
         }
     }
@@ -329,6 +330,10 @@ impl Value {
         }
     }
 
+    fn to_vector(&self) -> Vec<Value> {
+        
+    }
+
     fn apply_binary_op<F>(&self, r: &Value, f: F) -> Value
         where F: Fn(&Value, &Value) -> Value {
         match (self, r) {
@@ -337,19 +342,19 @@ impl Value {
                     .zip((*rv).iter())
                     .map(|(l, r)| f(l, r))
                     .collect();
-                Value::Vector(resv.boxed())
+                Value::Vector(resv.rc())
             },
             (&Value::Vector(ref lv), r) => {
                 let resv: Vec<Value> = (*lv).iter()
                     .map(|l| f(l, r))
                     .collect();
-                Value::Vector(resv.boxed())
+                Value::Vector(resv.rc())
             },
             (l, &Value::Vector(ref rv)) => {
                 let resv: Vec<Value> = (*rv).iter()
                     .map(|r| f(l, r))
                     .collect();
-                Value::Vector(resv.boxed())
+                Value::Vector(resv.rc())
             },
             (l, r) => f(l, r),
         }
@@ -362,7 +367,7 @@ impl Value {
                 let resv: Vec<Value> = (*v).iter()
                     .map(|val| f(val))
                     .collect();
-                Value::Vector(resv.boxed())
+                Value::Vector(resv.rc())
             },
             v => f(v),
         }
@@ -376,12 +381,12 @@ mod tests {
 
     fn ivec(v: Vec<i32>) -> Value {
         let vout: Vec<Value> = v.iter().map(|i| Value::Integer(*i as i64)).collect();
-        Value::Vector(vout.boxed())
+        Value::Vector(vout.rc())
     }
 
     fn fvec(v: Vec<f64>) -> Value {
         let vout: Vec<Value> = v.iter().map(|f| Value::Float(*f)).collect();
-        Value::Vector(vout.boxed())
+        Value::Vector(vout.rc())
     }
 
     #[test]
@@ -458,25 +463,25 @@ mod tests {
 
     #[test]
     fn test_vectors_unary_op() {
-        let vin = Value::Vector(vec![Value::Float(4.0), Value::Integer(16), Value::Float(25.0)].boxed());
-        let vout = Value::Vector(vec![Value::Float(2.0), Value::Float(4.0), Value::Float(5.0)].boxed());
+        let vin = Value::Vector(vec![Value::Float(4.0), Value::Integer(16), Value::Float(25.0)].rc());
+        let vout = Value::Vector(vec![Value::Float(2.0), Value::Float(4.0), Value::Float(5.0)].rc());
         assert_eq!(vin.sqrt(), vout);
     }
 
     #[test]
     fn test_vectors_binary_op() {
-        let vin1 = Value::Vector(vec![Value::Integer(2), Value::Integer(3), Value::Float(4.0)].boxed());
-        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(9.0), Value::Float(16.0)].boxed());
+        let vin1 = Value::Vector(vec![Value::Integer(2), Value::Integer(3), Value::Float(4.0)].rc());
+        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(9.0), Value::Float(16.0)].rc());
         assert_eq!(vin1.pow(&Value::Integer(2)), vout);
 
-        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(8.0), Value::Float(16.0)].boxed());
+        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(8.0), Value::Float(16.0)].rc());
         assert_eq!(Value::Integer(2).pow(&vin1), vout);
 
-        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0)].boxed());
-        let vout = Value::Vector(vec![Value::Float(8.0), Value::Float(9.0), Value::Float(4.0)].boxed());
+        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0)].rc());
+        let vout = Value::Vector(vec![Value::Float(8.0), Value::Float(9.0), Value::Float(4.0)].rc());
         assert_eq!(vin1.pow(&vin2), vout);
 
-        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0), Value::Float(0.0)].boxed());
+        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0), Value::Float(0.0)].rc());
         assert_eq!(vin1.pow(&vin2), vout);
     }
 }

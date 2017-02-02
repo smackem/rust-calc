@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use parser::{Expr, Stmt};
 use value::Value;
+use util::Boxable;
 
 /// The entities that result from interpretation and that are stored in a
 /// `Context`.
@@ -128,6 +129,13 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(res)
         },
         Expr::Literal(ref v) => v.clone(),
+        Expr::Vector(ref exprs) => {
+            let mut values = vec![];
+            for ref e in (*exprs).iter() {
+                values.push(try!(eval_expr(e, ctx)));
+            }
+            Value::Vector(values.rc())
+        },
     };
 
     Result::Ok(val)

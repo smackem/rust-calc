@@ -36,7 +36,7 @@ impl Value {
     /// assert_eq!(Value::Float(12.3).integer_divide_by(&Value::Integer(3)), Value::Integer(4));
     /// ```
     pub fn integer_divide_by(&self, other: &Value) -> Value {
-        self.apply_binary_op(other, |l, r| Value::Integer(l.to_integer() / r.to_integer()))
+        self.apply_binary_op(other, &|l, r| Value::Integer(l.to_integer() / r.to_integer()))
     }
 
     pub fn concat(&self, other: &Value) -> Value {
@@ -47,39 +47,70 @@ impl Value {
     }
 
     pub fn pow(&self, exponent: &Value) -> Value {
-        self.apply_binary_op(exponent, |l, r| Value::Float(l.to_float().powf(r.to_float()))) 
+        self.apply_binary_op(exponent, &|l, r| Value::Float(l.to_float().powf(r.to_float()))) 
     }
 
     pub fn log(&self, base: &Value) -> Value {
-        self.apply_binary_op(base, |l, r| Value::Float(l.to_float().log(r.to_float()))) 
+        self.apply_binary_op(base, &|l, r| Value::Float(l.to_float().log(r.to_float()))) 
+    }
+
+    pub fn dot_product(&self, other: &Value) -> Value {
+        let lv = self.to_vector();
+        let rv = other.to_vector();
+        let sum: f64 = (*lv).iter()
+            .zip((*rv).iter())
+            .map(|(l, r)| l.to_float() * r.to_float())
+            .sum();
+        Value::Float(sum)
     }
 
     pub fn sqrt(&self) -> Value {
-        self.apply_unary_op(|val| Value::Float(val.to_float().sqrt()))
+        self.apply_unary_op(&|val| Value::Float(val.to_float().sqrt()))
     }
 
     pub fn sin(&self) -> Value {
-        self.apply_unary_op(|val| Value::Float(val.to_float().sin()))
+        self.apply_unary_op(&|val| Value::Float(val.to_float().sin()))
     }
 
     pub fn cos(&self) -> Value {
-        self.apply_unary_op(|val| Value::Float(val.to_float().cos()))
+        self.apply_unary_op(&|val| Value::Float(val.to_float().cos()))
     }
 
     pub fn tan(&self) -> Value {
-        self.apply_unary_op(|val| Value::Float(val.to_float().tan()))
+        self.apply_unary_op(&|val| Value::Float(val.to_float().tan()))
     }
 
     pub fn asin(&self) -> Value {
-        self.apply_unary_op(|val| Value::Float(val.to_float().asin()))
+        self.apply_unary_op(&|val| Value::Float(val.to_float().asin()))
     }
 
     pub fn acos(&self) -> Value {
-        self.apply_unary_op(|val| Value::Float(val.to_float().acos()))
+        self.apply_unary_op(&|val| Value::Float(val.to_float().acos()))
     }
 
     pub fn atan(&self) -> Value {
-        self.apply_unary_op(|val| Value::Float(val.to_float().atan()))
+        self.apply_unary_op(&|val| Value::Float(val.to_float().atan()))
+    }
+
+    pub fn count(&self) -> Value {
+        if let &Value::Vector(ref v) = self {
+            Value::Integer((*v).len() as i64)
+        } else {
+            Value::Integer(1)
+        }
+    }
+
+    pub fn len(&self) -> Value {
+        if let &Value::Vector(ref v) = self {
+            let mut sum = 0.0;
+            for val in (*v).iter() {
+                let f_val = val.to_float();
+                sum += f_val * f_val;
+            }
+            Value::Float(sum.sqrt())
+        } else {
+            Value::Float(self.to_float())
+        }
     }
 }
 
@@ -94,7 +125,7 @@ impl Add for Value {
     /// assert_eq!(Value::Integer(1) + Value::Integer(2), Value::Integer(3));
     /// ```
     fn add(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a + b),
                 (left, right) => Value::Float(left.to_float() + right.to_float()),
@@ -114,7 +145,7 @@ impl Sub for Value {
     /// assert_eq!(Value::Integer(1) - Value::Integer(2), Value::Integer(-1));
     /// ```
     fn sub(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a - b),
                 (left, right) => Value::Float(left.to_float() - right.to_float()),
@@ -134,7 +165,7 @@ impl BitAnd for Value {
     /// assert_eq!(Value::Integer(1) & Value::Integer(3), Value::Integer(1));
     /// ```
     fn bitand(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a & b),
                 (left, right) => Value::Integer(left.to_integer() & right.to_integer()),
@@ -154,7 +185,7 @@ impl BitOr for Value {
     /// assert_eq!(Value::Integer(1) | Value::Integer(2), Value::Integer(3));
     /// ```
     fn bitor(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a | b),
                 (left, right) => Value::Integer(left.to_integer() | right.to_integer()),
@@ -174,7 +205,7 @@ impl BitXor for Value {
     /// assert_eq!(Value::Integer(1) ^ Value::Integer(3), Value::Integer(2));
     /// ```
     fn bitxor(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a ^ b),
                 (left, right) => Value::Integer(left.to_integer() ^ right.to_integer()),
@@ -194,7 +225,7 @@ impl Mul for Value {
     /// assert_eq!(Value::Integer(2) * Value::Integer(3), Value::Integer(6));
     /// ```
     fn mul(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a * b),
                 (left, right) => Value::Float(left.to_float() * right.to_float()),
@@ -214,7 +245,7 @@ impl Div for Value {
     /// assert_eq!(Value::Integer(6) / Value::Integer(2), Value::Float(3.0));
     /// ```
     fn div(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| Value::Float(l.to_float() / r.to_float()))
+        self.apply_binary_op(&other, &|l, r| Value::Float(l.to_float() / r.to_float()))
     }
 }
 
@@ -229,7 +260,7 @@ impl Rem for Value {
     /// assert_eq!(Value::Integer(5) / Value::Integer(2), Value::Integer(1));
     /// ```
     fn rem(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a % b),
                 (left, right) => Value::Float(left.to_float() % right.to_float()),
@@ -249,7 +280,7 @@ impl Shl<Value> for Value {
     /// assert_eq!(Value::Integer(1) << Value::Integer(2), Value::Integer(4));
     /// ```
     fn shl(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a << b),
                 (left, right) => Value::Integer(left.to_integer() << right.to_integer()),
@@ -269,7 +300,7 @@ impl Shr<Value> for Value {
     /// assert_eq!(Value::Integer(8) >> Value::Integer(3), Value::Integer(1));
     /// ```
     fn shr(self, other: Value) -> Value {
-        self.apply_binary_op(&other, |l, r| {
+        self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
                 (&Value::Integer(a), &Value::Integer(b)) => Value::Integer(a >> b),
                 (left, right) => Value::Integer(left.to_integer() >> right.to_integer()),
@@ -345,25 +376,25 @@ impl Value {
         }
     }
 
-    fn apply_binary_op<F>(&self, r: &Value, f: F) -> Value
+    fn apply_binary_op<F>(&self, r: &Value, f: &F) -> Value
         where F: Fn(&Value, &Value) -> Value {
         match (self, r) {
             (&Value::Vector(ref lv), &Value::Vector(ref rv)) => {
                 let resv: Vec<Value> = (*lv).iter()
                     .zip((*rv).iter())
-                    .map(|(l, r)| f(l, r))
+                    .map(|(l, r)| l.apply_binary_op(r, f))
                     .collect();
                 Value::Vector(resv.rc())
             },
             (&Value::Vector(ref lv), r) => {
                 let resv: Vec<Value> = (*lv).iter()
-                    .map(|l| f(l, r))
+                    .map(|l| l.apply_binary_op(r, f))
                     .collect();
                 Value::Vector(resv.rc())
             },
             (l, &Value::Vector(ref rv)) => {
                 let resv: Vec<Value> = (*rv).iter()
-                    .map(|r| f(l, r))
+                    .map(|r| l.apply_binary_op(r, f))
                     .collect();
                 Value::Vector(resv.rc())
             },
@@ -371,12 +402,12 @@ impl Value {
         }
     }
 
-    fn apply_unary_op<F>(&self, f: F) -> Value
+    fn apply_unary_op<F>(&self, f: &F) -> Value
         where F: Fn(&Value) -> Value {
         match self {
             &Value::Vector(ref v) => {
                 let resv: Vec<Value> = (*v).iter()
-                    .map(|val| f(val))
+                    .map(|val| val.apply_unary_op(f))
                     .collect();
                 Value::Vector(resv.rc())
             },
@@ -494,5 +525,13 @@ mod tests {
 
         let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0), Value::Float(0.0)].rc());
         assert_eq!(vin1.pow(&vin2), vout);
+    }
+
+    #[test]
+    fn test_nested_vectors() {
+        // [[[1]]] + 1 = [[[3]]]
+        let v = Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(1)].rc())].rc())].rc());
+        assert_eq!(v + Value::Integer(2),
+                   Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(3)].rc())].rc())].rc()));
     }
 }

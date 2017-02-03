@@ -83,6 +83,8 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*left, ctx)) << try!(eval_expr(&*right, ctx)),
         Expr::ShiftRight(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)) >> try!(eval_expr(&*right, ctx)),
+        Expr::DotProduct(ref left, ref right) =>
+            try!(eval_expr(&*left, ctx)).dot_product(&try!(eval_expr(&*right, ctx))),
         Expr::Pow(ref left, ref right) =>
             try!(eval_expr(&*left, ctx)).pow(&try!(eval_expr(&*right, ctx))),
         Expr::Log(ref left, ref right) =>
@@ -105,6 +107,10 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*inner, ctx)).acos(),
         Expr::Atan(ref inner) =>
             try!(eval_expr(&*inner, ctx)).atan(),
+        Expr::Len(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).len(),
+        Expr::Count(ref inner) =>
+            try!(eval_expr(&*inner, ctx)).count(),
         Expr::BindingRef(ref s) => {
             let res = match ctx.get(s) {
                 Some(item) => {

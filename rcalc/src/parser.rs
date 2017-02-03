@@ -31,6 +31,7 @@ pub enum Expr {
     Mod(Box<Expr>, Box<Expr>),
     ShiftLeft(Box<Expr>, Box<Expr>),
     ShiftRight(Box<Expr>, Box<Expr>),
+    DotProduct(Box<Expr>, Box<Expr>),
     Neg(Box<Expr>),
     Pow(Box<Expr>, Box<Expr>),
     Log(Box<Expr>, Box<Expr>),
@@ -41,10 +42,12 @@ pub enum Expr {
     Asin(Box<Expr>),
     Acos(Box<Expr>),
     Atan(Box<Expr>),
+    Len(Box<Expr>),
+    Count(Box<Expr>),
     BindingRef(String),
     FunCall(String, Box<Vec<Expr>>),
-    Vector(Box<Vec<Expr>>),
     Literal(Value),
+    Vector(Box<Vec<Expr>>),
 }
 
 /// Parses the given input and returns the AST.
@@ -289,6 +292,10 @@ impl<'a> Parser<'a> {
                     self.next();
                     left = Expr::ShiftRight(left.boxed(), try!(self.parse_molecule()).boxed())
                 },
+                Token::DotWord => {
+                    self.next();
+                    left = Expr::DotProduct(left.boxed(), try!(self.parse_molecule()).boxed())
+                },
                 _ => break,
             };
         }
@@ -337,6 +344,8 @@ impl<'a> Parser<'a> {
             Token::Asin => Expr::Asin(try!(self.parse_atom()).boxed()),
             Token::Acos => Expr::Acos(try!(self.parse_atom()).boxed()),
             Token::Atan => Expr::Atan(try!(self.parse_atom()).boxed()),
+            Token::Len => Expr::Len(try!(self.parse_atom()).boxed()),
+            Token::Count => Expr::Count(try!(self.parse_atom()).boxed()),
             Token::Ident(ref s) => {
                 let ident = s.clone();
                 match *self.current() {

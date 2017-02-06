@@ -93,6 +93,8 @@ fn print_value(v: &Value) {
             println!("  {:#x}", n);
             println!("  {:#b}", n);
         },
-        &Value::Vector(ref v) => println!("= {:?}", *v),
+        &Value::Vector(_) => {
+            println!("= {}", v);
+        },
     }
 }

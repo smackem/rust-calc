@@ -1,5 +1,6 @@
 use std::ops::*;
 use std::rc::Rc;
+use std::cmp::Ordering;
 use util::Boxable;
 
 /// Defines the possible types of values to process.
@@ -111,6 +112,32 @@ impl Value {
         } else {
             Value::Float(self.to_float())
         }
+    }
+}
+
+impl fmt::Display for Value {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        fn to_str(val: &Value, buf: &mut String) {
+            match val {
+                &Value::Float(fl) => buf.push_str(&format!("{}", fl)),
+                &Value::Integer(n) => buf.push_str(&format!("{}", n)),
+                &Value::Vector(ref v) => {
+                    buf.push('[');
+                    let mut first = true;
+                    for vval in (*v).iter() {
+                        if first == false {
+                            buf.push_str(", ");
+                        }
+                        to_str(vval, buf);
+                        first = false;
+                    }
+                    buf.push(']');
+                }
+            }
+        };
+        let mut buf = String::new();
+        to_str(self, &mut buf);
+        write!(f, "{}", &buf)
     }
 }
 
@@ -330,6 +357,18 @@ impl Neg for Value {
                     .collect();
                 Value::Vector(resv.rc())
             },
+        }
+    }
+}
+
+impl PartialOrd for Value {
+    fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
+        match (self, other) {
+            (&Value::Integer(l), &Value::Integer(r)) => l.partial_cmp(&r),
+            (&Value::Float(l), &Value::Float(r)) => l.partial_cmp(&r),
+            (&Value::Integer(l), &Value::Float(r)) => (l as f64).partial_cmp(&r),
+            (&Value::Float(l), &Value::Integer(r)) => l.partial_cmp(&(r as f64)),
+            _ => None,
         }
     }
 }

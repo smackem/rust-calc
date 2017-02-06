@@ -48,6 +48,14 @@ pub enum Expr {
     FunCall(String, Box<Vec<Expr>>),
     Literal(Value),
     Vector(Box<Vec<Expr>>),
+    RangeVector(Box<Range>),
+}
+
+#[derive(Debug, PartialEq, Clone)]
+pub struct Range {
+    pub incl_lower_bound: Expr,
+    pub excl_upper_bound: Expr,
+    pub step: Expr,
 }
 
 /// Parses the given input and returns the AST.
@@ -357,12 +365,7 @@ impl<'a> Parser<'a> {
                     _ => Expr::BindingRef(ident),
                 }
             },
-            Token::LBracket => {
-                let exprs = try!(self.parse_expr_list());
-                try!(self.assert_current(Token::RBracket));
-                self.next();
-                Expr::Vector(exprs.boxed())
-            }
+            Token::LBracket => try!(self.parse_vector()),
             Token::LParen => {
                 let inner = try!(self.parse_term());
                 try!(self.assert_current(Token::RParen));
@@ -411,6 +414,54 @@ impl<'a> Parser<'a> {
         }
 
         Result::Ok(exprs)
+    }
+
+    // [1]
+    // [1, 2, 3]
+    // [0..10]
+    // [0..10:2]
+    //  ^
+    fn parse_vector<'s>(&'s mut self) -> Result<Expr, String> {
+        let expr1 = try!(self.parse_expr());
+        let res_expr = match *self.next() {
+            Token::RBracket => Expr::Vector(vec![expr1].boxed()),
+            Token::Comma => {
+                let mut tail_exprs = try!(self.parse_expr_list());
+                try!(self.assert_current(Token::RBracket));
+                self.next();
+                let mut exprs = vec![expr1];
+                exprs.append(&mut tail_exprs);
+                Expr::Vector(exprs.boxed())
+            },
+            Token::DotDot => {
+                let range = try!(self.parse_range(expr1));
+                try!(self.assert_current(Token::RBracket));
+                self.next();
+                Expr::RangeVector(range.boxed())
+            },
+            _ => try!(Result::Err(format!("Expected Comma, RBracket or DotDot, found {:?}", self.current()))),
+        };
+
+        Result::Ok(res_expr)
+    }
+
+    // [0..10]
+    // [0..10:2]
+    //     ^
+    fn parse_range<'s>(&'s mut self, lower: Expr) -> Result<Range, String> {
+        let upper = try!(self.parse_expr());
+        let step = if *self.current() == Token::Colon {
+            self.next();
+            try!(self.parse_expr())
+        } else {
+            integer_expr(1)
+        };
+
+        Result::Ok(Range {
+            incl_lower_bound: lower,
+            excl_upper_bound: upper,
+            step: step,
+        })
     }
 }
 
@@ -665,5 +716,49 @@ mod tests {
         let input = vec![Token::Minus, Token::Sin, Token::Integer(10)];
         let stmt = parse(&input).unwrap();
         assert_eq!(stmt, Stmt::Eval(Expr::Neg(Expr::Sin(integer_expr(10).boxed()).boxed())));
+    }
+    
+    #[test]
+    fn test_vector_single_item() {
+        let input = vec![Token::LBracket, Token::Integer(1), Token::RBracket];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt, Stmt::Eval(Expr::Vector(vec![integer_expr(1)].boxed())));
+    }
+
+    #[test]
+    fn test_vector_multiple_items() {
+        let input = vec![Token::LBracket, Token::Integer(1), Token::Comma, Token::Integer(2), Token::RBracket];
+        let stmt = parse(&input).unwrap();
+        assert_eq!(stmt, Stmt::Eval(Expr::Vector(vec![integer_expr(1), integer_expr(2)].boxed())));
+    }
+
+    #[test]
+    fn test_range_vector() {
+        let input = vec![Token::LBracket, Token::Integer(1), Token::DotDot, Token::Integer(5), Token::RBracket];
+        let stmt = parse(&input).unwrap();
+        let range = Range {
+            incl_lower_bound: integer_expr(1),
+            excl_upper_bound: integer_expr(5),
+            step: integer_expr(1),
+        };
+        assert_eq!(stmt, Stmt::Eval(Expr::RangeVector(range.boxed())));
+    }
+
+    #[test]
+    fn test_range_vector_with_step() {
+        let input = vec![Token::LBracket,
+                         Token::Integer(1),
+                         Token::DotDot,
+                         Token::Integer(5),
+                         Token::Colon,
+                         Token::Integer(2),
+                         Token::RBracket];
+        let stmt = parse(&input).unwrap();
+        let range = Range {
+            incl_lower_bound: integer_expr(1),
+            excl_upper_bound: integer_expr(5),
+            step: integer_expr(2),
+        };
+        assert_eq!(stmt, Stmt::Eval(Expr::RangeVector(range.boxed())));
     }
 }

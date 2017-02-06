@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::cmp::Ordering;
 use parser::{Expr, Stmt};
 use value::Value;
 use util::Boxable;
@@ -144,6 +145,22 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             }
             Value::Vector(values.rc())
         },
+        Expr::RangeVector(ref range) => {
+            let mut values = vec![];
+            let mut value = try!(eval_expr(&range.incl_lower_bound, ctx));
+            let upper_val = try!(eval_expr(&range.excl_upper_bound, ctx));
+            let step_val = try!(eval_expr(&range.step, ctx));
+            loop {
+                values.push(value.clone());
+                value = value + step_val.clone();
+                match value.partial_cmp(&upper_val) {
+                    Some(Ordering::Less) => (),
+                    None | Some(Ordering::Greater) | Some(Ordering::Equal) => break,
+                }
+            }
+
+            Value::Vector(values.rc())
+        }
     };
 
     Result::Ok(val)

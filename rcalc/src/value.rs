@@ -116,12 +116,19 @@ impl Value {
     }
 }
 
+fn format_with_precision<T>(t: &T, precision: &Option<usize>) -> String where T: fmt::Display {
+    return match *precision {
+        Some(p) => format!("{v:.p$}", v = t, p = p),
+        None => format!("{}", t),
+    }
+}
+
 impl fmt::Display for Value {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        fn to_str(val: &Value, buf: &mut String) {
+        fn to_str(val: &Value, buf: &mut String, precision: &Option<usize>) {
             match val {
-                &Value::Float(fl) => buf.push_str(&format!("{}", fl)),
-                &Value::Integer(n) => buf.push_str(&format!("{}", n)),
+                &Value::Float(fl) => buf.push_str(&format_with_precision(&fl, precision)),
+                &Value::Integer(n) => buf.push_str(&format_with_precision(&n, precision)),
                 &Value::Vector(ref v) => {
                     buf.push('[');
                     let mut first = true;
@@ -129,7 +136,7 @@ impl fmt::Display for Value {
                         if first == false {
                             buf.push_str(", ");
                         }
-                        to_str(vval, buf);
+                        to_str(vval, buf, precision);
                         first = false;
                     }
                     buf.push(']');
@@ -137,8 +144,8 @@ impl fmt::Display for Value {
             }
         };
         let mut buf = String::new();
-        to_str(self, &mut buf);
-        write!(f, "{}", &buf)
+        to_str(self, &mut buf, &f.precision());
+        f.write_str(&buf)
     }
 }
 

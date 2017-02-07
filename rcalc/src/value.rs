@@ -1,5 +1,6 @@
 use std::ops::*;
 use std::rc::Rc;
+use std::fmt;
 use std::cmp::Ordering;
 use util::Boxable;
 

@@ -17,16 +17,6 @@ pub enum RuntimeItem {
 /// Interprets the given `Stmt`, using the specified `Context` for binding
 /// lookup and storage. Returns either the resulting `RuntimeItem` if successful
 /// or an error message.
-///
-/// # Examples
-///
-/// ```
-/// // 1
-/// let stmt = Stmt::Eval(integer_expr(1));
-/// let mut ctx = ctx();
-/// let res = interpret(&stmt, &mut *ctx).unwrap();
-/// assert_eq!(res, RuntimeItem::Value(Value::Integer(1)));
-/// ```
 pub fn interpret(stmt: &Stmt, ctx: &mut Context) -> Result<RuntimeItem, String> {
     let item = match *stmt {
         Stmt::VarBind(ref ident, ref expr) => {
@@ -52,14 +42,6 @@ pub fn interpret(stmt: &Stmt, ctx: &mut Context) -> Result<RuntimeItem, String> 
 /// Evaluates the given expression and returns the result.
 /// The given `Context` stores the variables that can be addressed
 /// through identifiers.
-///
-/// # Examples
-///
-/// ```
-/// let expr = parser::integer_expr(1);
-/// let res = interpret(&expr, &*ctx());
-/// assert_eq!(res, Value::Integer(1));
-/// ```
 pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
     let val = match *expr {
         Expr::Plus(ref left, ref right) =>

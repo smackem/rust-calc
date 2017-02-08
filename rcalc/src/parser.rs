@@ -63,14 +63,6 @@ pub struct Range {
 /// # Return value
 ///
 /// Either `Result::Ok` with the parsed AST root or `Err` with an error message.
-///
-/// # Examples
-///
-/// ```
-/// let input = vec![Token::Integer(1)];
-/// let stmt = parse(&input).unwrap();
-/// assert_eq!(stmt, Stmt::Eval(Expr::Literal(Value::Integer(1))));
-/// ```
 pub fn parse(input: &Vec<Token>) -> Result<Stmt, String> {
     let mut parser = Parser {
         input: input,

@@ -30,13 +30,7 @@ pub enum Value {
 
 impl Value {
     /// Converts `self` to integer, divides it by `other` (also converted to integer) and
-    /// returns the result.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Float(12.3).integer_divide_by(&Value::Integer(3)), Value::Integer(4));
-    /// ```
+    /// returns the result as in `12.3 \ 3 = 4`.
     pub fn integer_divide_by(&self, other: &Value) -> Value {
         self.apply_binary_op(other, &|l, r| Value::Integer(l.to_integer() / r.to_integer()))
     }
@@ -152,13 +146,7 @@ impl fmt::Display for Value {
 impl Add for Value {
     type Output = Value;
 
-    /// Adds to `Value`s.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(1) + Value::Integer(2), Value::Integer(3));
-    /// ```
+    /// Adds two `Value`s as in `1 + 2 = 3`
     fn add(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -172,13 +160,7 @@ impl Add for Value {
 impl Sub for Value {
     type Output = Value;
 
-    /// Subtracts `Value` `other` from `self`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(1) - Value::Integer(2), Value::Integer(-1));
-    /// ```
+    /// Subtracts `Value` `other` from `self` as in `1 - 2 = -1`
     fn sub(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -192,13 +174,7 @@ impl Sub for Value {
 impl BitAnd for Value {
     type Output = Value;
 
-    /// Caclulates `Value` `other` & `self`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(1) & Value::Integer(3), Value::Integer(1));
-    /// ```
+    /// Caclulates `Value` `other` & `self` as in `3 & 1 = 1`
     fn bitand(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -213,12 +189,6 @@ impl BitOr for Value {
     type Output = Value;
 
     /// Caclulates `Value` `other` | `self`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(1) | Value::Integer(2), Value::Integer(3));
-    /// ```
     fn bitor(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -233,12 +203,6 @@ impl BitXor for Value {
     type Output = Value;
 
     /// Caclulates `Value` `other` ^ `self`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(1) ^ Value::Integer(3), Value::Integer(2));
-    /// ```
     fn bitxor(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -252,13 +216,7 @@ impl BitXor for Value {
 impl Mul for Value {
     type Output = Value;
 
-    /// Multiplies two `Value`s
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(2) * Value::Integer(3), Value::Integer(6));
-    /// ```
+    /// Multiplies two `Value`s as in `2 * 3 = 6`
     fn mul(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -273,12 +231,6 @@ impl Div for Value {
     type Output = Value;
 
     /// Divides `Value` `self` by `other`, always returning a `Float`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(6) / Value::Integer(2), Value::Float(3.0));
-    /// ```
     fn div(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| Value::Float(l.to_float() / r.to_float()))
     }
@@ -288,12 +240,6 @@ impl Rem for Value {
     type Output = Value;
 
     /// Divides `Value` `self` by `other`, returning the remainder.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(5) / Value::Integer(2), Value::Integer(1));
-    /// ```
     fn rem(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -308,12 +254,6 @@ impl Shl<Value> for Value {
     type Output = Value;
 
     /// Shifts `Value` `self` left by `other` bits.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(1) << Value::Integer(2), Value::Integer(4));
-    /// ```
     fn shl(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -328,12 +268,6 @@ impl Shr<Value> for Value {
     type Output = Value;
 
     /// Shifts `Value` `self` right by `other` bits.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(8) >> Value::Integer(3), Value::Integer(1));
-    /// ```
     fn shr(self, other: Value) -> Value {
         self.apply_binary_op(&other, &|l, r| {
             match (l, r) {
@@ -349,12 +283,6 @@ impl Neg for Value {
 
     /// The method for the unary `-` operator.
     /// Negates `Value` `self`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(-Value::Integer(10), Value::Integer(-10));
-    /// ```
     fn neg(self) -> Value {
         match self {
             Value::Integer(n) => Value::Integer(-n),
@@ -385,12 +313,6 @@ impl PartialOrd for Value {
 
 impl Value {
     /// Returns the contained value as `f64` with possible loss of precision for very large values.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Integer(12).to_float(), Value::Float(12.0));
-    /// ```
     fn to_float(&self) -> f64 {
         match self {
             &Value::Integer(n) => n as f64,
@@ -401,12 +323,6 @@ impl Value {
 
     /// Returns the contained value as `i64`, truncating the fractional part if the contained
     /// value is a `Float`.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// assert_eq!(Value::Float(12.3).to_integer(), Value::Integer(12));
-    /// ```
     fn to_integer(&self) -> i64 {
         match self {
             &Value::Integer(n) => n,

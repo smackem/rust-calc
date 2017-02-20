@@ -14,6 +14,7 @@ mod util;
 use std::collections::HashMap;
 use interpreter::Context;
 use lexer::Lexer;
+use parser::{ Stmt, Expr };
 
 pub use value::Value;
 pub use interpreter::RuntimeItem;
@@ -43,6 +44,7 @@ pub static IT_IDENT: &'static str = "it";
 pub struct Calculator {
     ctx: Box<Context>,
     lexer: Lexer,
+    deferred_exprs: Vec<Expr>,
 }
 
 impl Calculator {
@@ -55,7 +57,7 @@ impl Calculator {
             map.insert("e".to_string(), RuntimeItem::Value(Value::Float(std::f64::consts::E)));
             interpreter::context_from_hashmap(map)
         };
-        Calculator { ctx: ctx, lexer: Lexer::new() }
+        Calculator { ctx: ctx, lexer: Lexer::new(), deferred_exprs: vec![] }
     }
 
     /// Parses and evaluates the specified source.
@@ -96,5 +98,72 @@ impl Calculator {
         let item = try!(interpreter::interpret(&stmt, &mut *self.ctx));
         self.ctx.put(IT_IDENT, item);
         Result::Ok(self.ctx.get(IT_IDENT).unwrap())
+    }
+
+    /// Parses the specified source and either (in the case of a binding), interprets
+    /// the resulting statement or (in the case of an evaluation), defers evaluation
+    /// until `calc_deferred` is called.
+    ///
+    /// # Returns
+    ///
+    /// * `true` if the source was parsed as an evaluation and the evaluation was deferred.
+    /// & `false` if the source was parsed as a binding and interpreted instantly.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use rcalc::{ Calculator, RuntimeItem, Value };
+    /// let mut calculator = Calculator::new();
+    /// assert_eq!(calculator.defer("1 + 1"),
+    ///            Result::Ok(true));
+    /// assert_eq!(calculator.defer("let a = 1"),
+    ///            Result::Ok(false));
+    /// ```
+    pub fn defer(&mut self, src: &str) -> Result<bool, String> {
+        let input = try!(self.lexer.lex(&src));
+        info!("Tokens: {:?}", input);
+
+        let stmt = try!(parser::parse(&input));
+        info!("Ast: {:?}", stmt);
+
+        match stmt {
+            Stmt::Eval(expr) => {
+                self.deferred_exprs.push(expr);
+                Result::Ok(true)
+            },
+            _ => {
+                try!(interpreter::interpret(&stmt, &mut *self.ctx));
+                Result::Ok(false)
+            },
+        }
+    }
+
+    pub fn calc_deferred(&mut self) -> Result<&RuntimeItem, String> {
+        let exprs = {
+            let mut exprs = vec![];
+            exprs.append(&mut self.deferred_exprs);
+            exprs
+        };
+        unimplemented!()
+    }
+}
+
+// ============================================================================
+
+impl Calculator {
+    fn eval(&self, src: &str) -> Result<Value, String> {
+        let input = try!(self.lexer.lex(&src));
+        info!("Tokens: {:?}", input);
+
+        let stmt = try!(parser::parse(&input));
+        info!("Ast: {:?}", stmt);
+
+        let expr = match stmt {
+            Stmt::Eval(expr) => expr,
+            _ => try!(Result::Err("Statement is not an evaluation!")),
+        };
+
+        let val = try!(interpreter::eval_expr(&expr, &*self.ctx));
+        Result::Ok(val)
     }
 }

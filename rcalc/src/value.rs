@@ -1,5 +1,5 @@
 use std::ops::*;
-use std::rc::Rc;
+use std::sync::Arc;
 use std::fmt;
 use std::cmp::Ordering;
 use util::Boxable;
@@ -25,7 +25,7 @@ use util::Boxable;
 pub enum Value {
     Integer(i64),
     Float(f64),
-    Vector(Rc<Vec<Value>>),
+    Vector(Arc<Vec<Value>>),
 }
 
 impl Value {
@@ -39,7 +39,7 @@ impl Value {
         let mut lv = (*self.to_vector()).clone();
         let mut rv = (*other.to_vector()).clone();
         lv.append(&mut rv);
-        Value::Vector(lv.rc())
+        Value::Vector(lv.arc())
     }
 
     pub fn pow(&self, exponent: &Value) -> Value {
@@ -291,7 +291,7 @@ impl Neg for Value {
                 let resv: Vec<Value> = (*v).iter()
                     .map(|val| val.clone().neg())
                     .collect();
-                Value::Vector(resv.rc())
+                Value::Vector(resv.arc())
             },
         }
     }
@@ -331,10 +331,10 @@ impl Value {
         }
     }
 
-    fn to_vector(&self) -> Rc<Vec<Value>> {
+    fn to_vector(&self) -> Arc<Vec<Value>> {
         match self {
-            &Value::Integer(n) => vec![Value::Integer(n)].rc(),
-            &Value::Float(f) => vec![Value::Float(f)].rc(),
+            &Value::Integer(n) => vec![Value::Integer(n)].arc(),
+            &Value::Float(f) => vec![Value::Float(f)].arc(),
             &Value::Vector(ref v) => v.clone(),
         }
     }
@@ -347,19 +347,19 @@ impl Value {
                     .zip((*rv).iter())
                     .map(|(l, r)| l.apply_binary_op(r, f))
                     .collect();
-                Value::Vector(resv.rc())
+                Value::Vector(resv.arc())
             },
             (&Value::Vector(ref lv), r) => {
                 let resv: Vec<Value> = (*lv).iter()
                     .map(|l| l.apply_binary_op(r, f))
                     .collect();
-                Value::Vector(resv.rc())
+                Value::Vector(resv.arc())
             },
             (l, &Value::Vector(ref rv)) => {
                 let resv: Vec<Value> = (*rv).iter()
                     .map(|r| l.apply_binary_op(r, f))
                     .collect();
-                Value::Vector(resv.rc())
+                Value::Vector(resv.arc())
             },
             (l, r) => f(l, r),
         }
@@ -372,7 +372,7 @@ impl Value {
                 let resv: Vec<Value> = (*v).iter()
                     .map(|val| val.apply_unary_op(f))
                     .collect();
-                Value::Vector(resv.rc())
+                Value::Vector(resv.arc())
             },
             v => f(v),
         }
@@ -386,12 +386,12 @@ mod tests {
 
     fn ivec(v: Vec<i32>) -> Value {
         let vout: Vec<Value> = v.iter().map(|i| Value::Integer(*i as i64)).collect();
-        Value::Vector(vout.rc())
+        Value::Vector(vout.arc())
     }
 
     fn fvec(v: Vec<f64>) -> Value {
         let vout: Vec<Value> = v.iter().map(|f| Value::Float(*f)).collect();
-        Value::Vector(vout.rc())
+        Value::Vector(vout.arc())
     }
 
     #[test]
@@ -468,33 +468,33 @@ mod tests {
 
     #[test]
     fn test_vectors_unary_op() {
-        let vin = Value::Vector(vec![Value::Float(4.0), Value::Integer(16), Value::Float(25.0)].rc());
-        let vout = Value::Vector(vec![Value::Float(2.0), Value::Float(4.0), Value::Float(5.0)].rc());
+        let vin = Value::Vector(vec![Value::Float(4.0), Value::Integer(16), Value::Float(25.0)].arc());
+        let vout = Value::Vector(vec![Value::Float(2.0), Value::Float(4.0), Value::Float(5.0)].arc());
         assert_eq!(vin.sqrt(), vout);
     }
 
     #[test]
     fn test_vectors_binary_op() {
-        let vin1 = Value::Vector(vec![Value::Integer(2), Value::Integer(3), Value::Float(4.0)].rc());
-        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(9.0), Value::Float(16.0)].rc());
+        let vin1 = Value::Vector(vec![Value::Integer(2), Value::Integer(3), Value::Float(4.0)].arc());
+        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(9.0), Value::Float(16.0)].arc());
         assert_eq!(vin1.pow(&Value::Integer(2)), vout);
 
-        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(8.0), Value::Float(16.0)].rc());
+        let vout = Value::Vector(vec![Value::Float(4.0), Value::Float(8.0), Value::Float(16.0)].arc());
         assert_eq!(Value::Integer(2).pow(&vin1), vout);
 
-        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0)].rc());
-        let vout = Value::Vector(vec![Value::Float(8.0), Value::Float(9.0), Value::Float(4.0)].rc());
+        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0)].arc());
+        let vout = Value::Vector(vec![Value::Float(8.0), Value::Float(9.0), Value::Float(4.0)].arc());
         assert_eq!(vin1.pow(&vin2), vout);
 
-        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0), Value::Float(0.0)].rc());
+        let vin2 = Value::Vector(vec![Value::Integer(3), Value::Integer(2), Value::Float(1.0), Value::Float(0.0)].arc());
         assert_eq!(vin1.pow(&vin2), vout);
     }
 
     #[test]
     fn test_nested_vectors() {
         // [[[1]]] + 1 = [[[3]]]
-        let v = Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(1)].rc())].rc())].rc());
+        let v = Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(1)].arc())].arc())].arc());
         assert_eq!(v + Value::Integer(2),
-                   Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(3)].rc())].rc())].rc()));
+                   Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(3)].arc())].arc())].arc()));
     }
 }

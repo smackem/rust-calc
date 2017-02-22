@@ -12,9 +12,10 @@ mod interpreter;
 mod util;
 
 use std::collections::HashMap;
+use std::thread;
 use interpreter::Context;
 use lexer::Lexer;
-use parser::{ Stmt, Expr };
+use util::Boxable;
 
 pub use value::Value;
 pub use interpreter::RuntimeItem;
@@ -44,7 +45,6 @@ pub static IT_IDENT: &'static str = "it";
 pub struct Calculator {
     ctx: Box<Context>,
     lexer: Lexer,
-    deferred_exprs: Vec<Expr>,
 }
 
 impl Calculator {
@@ -57,7 +57,7 @@ impl Calculator {
             map.insert("e".to_string(), RuntimeItem::Value(Value::Float(std::f64::consts::E)));
             interpreter::context_from_hashmap(map)
         };
-        Calculator { ctx: ctx, lexer: Lexer::new(), deferred_exprs: vec![] }
+        Calculator { ctx: ctx, lexer: Lexer::new() }
     }
 
     /// Parses and evaluates the specified source.
@@ -100,70 +100,70 @@ impl Calculator {
         Result::Ok(self.ctx.get(IT_IDENT).unwrap())
     }
 
-    /// Parses the specified source and either (in the case of a binding), interprets
-    /// the resulting statement or (in the case of an evaluation), defers evaluation
-    /// until `calc_deferred` is called.
+    /// Parses and evaluates the specified sources in parallel, merging the
+    /// resulting `RuntimeItem`s into this `Calculator`'s context.
+    /// 'it' will afterwards refer to a vector containing all the values
+    /// that have been successfully calculated in parallel. This vector
+    /// has the same order as the input vector of sources.
     ///
-    /// # Returns
+    /// # Return Value
     ///
-    /// * `true` if the source was parsed as an evaluation and the evaluation was deferred.
-    /// & `false` if the source was parsed as a binding and interpreted instantly.
+    /// The 'it' value, which is always a vector.
     ///
     /// # Examples
     ///
     /// ```
     /// use rcalc::{ Calculator, RuntimeItem, Value };
+    /// use std::sync::Arc;
     /// let mut calculator = Calculator::new();
-    /// assert_eq!(calculator.defer("1 + 1"),
-    ///            Result::Ok(true));
-    /// assert_eq!(calculator.defer("let a = 1"),
-    ///            Result::Ok(false));
+    /// assert_eq!(calculator.calc_parallel(vec!["1 + 1".to_string(), "2 + 2".to_string()]),
+    ///            &RuntimeItem::Value(Value::Vector(Arc::new(vec![Value::Integer(2), Value::Integer(4)]))));
     /// ```
-    pub fn defer(&mut self, src: &str) -> Result<bool, String> {
-        let input = try!(self.lexer.lex(&src));
-        info!("Tokens: {:?}", input);
-
-        let stmt = try!(parser::parse(&input));
-        info!("Ast: {:?}", stmt);
-
-        match stmt {
-            Stmt::Eval(expr) => {
-                self.deferred_exprs.push(expr);
-                Result::Ok(true)
-            },
-            _ => {
-                try!(interpreter::interpret(&stmt, &mut *self.ctx));
-                Result::Ok(false)
-            },
-        }
-    }
-
-    pub fn calc_deferred(&mut self) -> Result<&RuntimeItem, String> {
-        let exprs = {
-            let mut exprs = vec![];
-            exprs.append(&mut self.deferred_exprs);
-            exprs
+    pub fn calc_parallel(&mut self, srcs: Vec<String>) -> &RuntimeItem {
+        let mut threads = vec![];
+        for src in srcs {
+            let context_map = self.get_context();
+            threads.push(thread::spawn(move || {
+                let mut local_calc = Calculator::with_context(context_map);
+                let _ = local_calc.calc(&src).unwrap();
+                local_calc.get_context()
+            }));
         };
-        unimplemented!()
+
+        let mut its = vec![];
+        for thread in threads {
+            match thread.join() {
+                Result::Ok(map) => {
+                    for (ident, item) in map.iter() {
+                        self.ctx.put(ident, item.clone());
+                    };
+                    if let &RuntimeItem::Value(ref val) = map.get(IT_IDENT).unwrap() {
+                        its.push(val.clone());
+                    };
+                },
+                Result::Err(x) => error!("{:?}", x),
+            }
+        }
+
+        let it = RuntimeItem::Value(Value::Vector(its.arc()));
+        self.ctx.put(IT_IDENT, it);
+        self.ctx.get(IT_IDENT).unwrap()
     }
 }
 
 // ============================================================================
 
 impl Calculator {
-    fn eval(&self, src: &str) -> Result<Value, String> {
-        let input = try!(self.lexer.lex(&src));
-        info!("Tokens: {:?}", input);
+    fn with_context(map: HashMap<String, RuntimeItem>) -> Calculator {
+        let ctx = interpreter::context_from_hashmap(map);
+        Calculator { ctx: ctx, lexer: Lexer::new() }
+    }
 
-        let stmt = try!(parser::parse(&input));
-        info!("Ast: {:?}", stmt);
-
-        let expr = match stmt {
-            Stmt::Eval(expr) => expr,
-            _ => try!(Result::Err("Statement is not an evaluation!")),
-        };
-
-        let val = try!(interpreter::eval_expr(&expr, &*self.ctx));
-        Result::Ok(val)
+    fn get_context(&self) -> HashMap<String, RuntimeItem> {
+        let mut map = HashMap::new();
+        for (ident, item) in self.ctx.list() {
+            map.insert(ident.clone(), item.clone());
+        }
+        map
     }
 }

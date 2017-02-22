@@ -125,7 +125,7 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             for ref e in (*exprs).iter() {
                 values.push(try!(eval_expr(e, ctx)));
             }
-            Value::Vector(values.rc())
+            Value::Vector(values.arc())
         },
         Expr::RangeVector(ref range) => {
             let mut values = vec![];
@@ -141,7 +141,7 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
                 }
             }
 
-            Value::Vector(values.rc())
+            Value::Vector(values.arc())
         }
     };
 
@@ -157,6 +157,9 @@ pub trait Context {
     /// Puts the `RuntimeItem` with the given `ident` into the `Context`.
     /// Adds the item if it is not present.
     fn put(&mut self, ident: &str, item: RuntimeItem);
+
+    /// Lists all ident/value pairs present in the `Context`.
+    fn list(&self) -> Vec<(&String, &RuntimeItem)>;
 }
 
 /// Returns a boxed object that implements the `Context` trait based
@@ -182,6 +185,10 @@ impl Context for MapContext {
     fn put(&mut self, ident: &str, item: RuntimeItem) {
         self.map.insert(ident.to_string(), item);
     }
+
+    fn list(&self) -> Vec<(&String, &RuntimeItem)> {
+        self.map.iter().collect()
+    }
 }
 
 struct StackedContext<'a> {
@@ -206,6 +213,13 @@ impl<'a> Context for StackedContext<'a> {
 
     fn put(&mut self, ident: &str, item: RuntimeItem) {
         self.head.put(ident, item);
+    }
+
+    fn list(&self) -> Vec<(&String, &RuntimeItem)> {
+        let mut tail_list = self.next.list();
+        let mut head_list = self.head.list();
+        tail_list.append(&mut head_list);
+        tail_list
     }
 }
 

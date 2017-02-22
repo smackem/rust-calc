@@ -1,9 +1,11 @@
 use std::rc::Rc;
+use std::sync::Arc;
 
 /// A trait that enables boxing of values with a fluent api, e.g. `it.collect().boxed()`.
 pub trait Boxable {
     fn boxed(self) -> Box<Self>;
     fn rc(self) -> Rc<Self>;
+    fn arc(self) -> Arc<Self>;
 }
 
 impl<T> Boxable for T {
@@ -14,5 +16,9 @@ impl<T> Boxable for T {
 
     fn rc(self) -> Rc<Self> {
         Rc::new(self)
+    }
+
+    fn arc(self) -> Arc<Self> {
+        Arc::new(self)
     }
 }

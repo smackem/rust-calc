@@ -1,6 +1,6 @@
 extern crate rcalc;
 
-use std::rc::Rc;
+use std::sync::Arc;
 use rcalc::{ Calculator, RuntimeItem, Value };
 
 #[test]
@@ -82,5 +82,32 @@ fn test_binding_ref() {
 fn test_vectors() {
     let mut calculator = Calculator::new();
     assert_eq!(calculator.calc(r"[1, 2] + 1"),
-               Result::Ok(&RuntimeItem::Value(Value::Vector(Rc::new(vec![Value::Integer(2), Value::Integer(3)])))));
+               Result::Ok(&RuntimeItem::Value(Value::Vector(Arc::new(vec![Value::Integer(2), Value::Integer(3)])))));
+}
+
+#[test]
+fn test_calc_parallel() {
+    let mut calculator = Calculator::new();
+    assert_eq!(calculator.calc_parallel(vec!["1 + 1".to_string(), "2 + 2".to_string()]),
+               &RuntimeItem::Value(Value::Vector(Arc::new(vec![Value::Integer(2), Value::Integer(4)]))));
+}
+
+#[test]
+fn test_calc_parallel_with_context_1() {
+    let mut calculator = Calculator::new();
+    assert!(calculator.calc("let one = 1").is_ok());
+    assert!(calculator.calc("let two = 2").is_ok());
+    assert_eq!(calculator.calc_parallel(vec!["let a = one + one".to_string(), "let b = two + two".to_string()]),
+               &RuntimeItem::Value(Value::Vector(Arc::new(vec![Value::Integer(2), Value::Integer(4)]))));
+}
+
+#[test]
+fn test_calc_parallel_with_context_2() {
+    let mut calculator = Calculator::new();
+    assert_eq!(calculator.calc_parallel(vec!["let a = 1 + 1".to_string(), "let b = 2 + 2".to_string()]),
+               &RuntimeItem::Value(Value::Vector(Arc::new(vec![Value::Integer(2), Value::Integer(4)]))));
+    assert_eq!(calculator.calc("a"),
+               Result::Ok(&RuntimeItem::Value(Value::Integer(2))));
+    assert_eq!(calculator.calc("b"),
+               Result::Ok(&RuntimeItem::Value(Value::Integer(4))));
 }

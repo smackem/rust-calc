@@ -2,6 +2,7 @@ use std::ops::*;
 use std::sync::Arc;
 use std::fmt;
 use std::cmp::Ordering;
+use std::io::{ BufWriter, Write };
 use util::Boxable;
 
 /// Defines the possible types of values to process.
@@ -108,12 +109,27 @@ impl Value {
             Value::Float(self.to_float())
         }
     }
-}
 
-fn format_with_precision<T>(t: &T, precision: &Option<usize>) -> String where T: fmt::Display {
-    return match *precision {
-        Some(p) => format!("{v:.p$}", v = t, p = p),
-        None => format!("{}", t),
+    pub fn write_json<T: Write>(&self, writer: &mut BufWriter<T>) -> ::std::io::Result<()> {
+        fn write_recurse<T: Write>(val: &Value, writer: &mut BufWriter<T>) -> ::std::io::Result<()> {
+            match val {
+                &Value::Float(fl) => write!(writer, "{}", fl),
+                &Value::Integer(n) => write!(writer, "{}", n),
+                &Value::Vector(ref v) => {
+                    try!(writer.write_all(b"["));
+                    let mut index = 0;
+                    for vval in (*v).iter() {
+                        if index > 0 {
+                            try!(writer.write_all(b", "));
+                        }
+                        try!(write_recurse(vval, writer));
+                        index += 1;
+                    }
+                    writer.write_all(b"]")
+                }
+            }
+        };
+        write_recurse(self, writer)
     }
 }
 
@@ -125,15 +141,19 @@ impl fmt::Display for Value {
                 &Value::Integer(n) => buf.push_str(&format_with_precision(&n, precision)),
                 &Value::Vector(ref v) => {
                     buf.push('[');
-                    let mut first = true;
-                    for vval in (*v).iter() {
-                        if first == false {
+                    let mut index = 0;
+                    for vval in (*v).iter().take(100) {
+                        if index > 0 {
                             buf.push_str(", ");
                         }
                         to_str(vval, buf, precision);
-                        first = false;
+                        index += 1;
                     }
-                    buf.push(']');
+                    if (*v).len() > index {
+                        buf.push_str(&format!(", ... ({} values more)", (*v).len() - index));
+                    } else {
+                        buf.push(']');
+                    }
                 }
             }
         };
@@ -379,10 +399,18 @@ impl Value {
     }
 }
 
+fn format_with_precision<T>(t: &T, precision: &Option<usize>) -> String where T: fmt::Display {
+    return match *precision {
+        Some(p) => format!("{v:.p$}", v = t, p = p),
+        None => format!("{}", t),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use util::Boxable;
+    use std::io::{ BufWriter };
 
     fn ivec(v: Vec<i32>) -> Value {
         let vout: Vec<Value> = v.iter().map(|i| Value::Integer(*i as i64)).collect();
@@ -392,6 +420,15 @@ mod tests {
     fn fvec(v: Vec<f64>) -> Value {
         let vout: Vec<Value> = v.iter().map(|f| Value::Float(*f)).collect();
         Value::Vector(vout.arc())
+    }
+
+    fn write_json(v: &Value) -> String {
+        let mut buf = Vec::new();
+        let _ = {
+            let mut writer = BufWriter::new(&mut buf);
+            assert!(v.write_json(&mut writer).is_ok());
+        };
+        String::from_utf8(buf).unwrap()
     }
 
     #[test]
@@ -496,5 +533,32 @@ mod tests {
         let v = Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(1)].arc())].arc())].arc());
         assert_eq!(v + Value::Integer(2),
                    Value::Vector(vec![Value::Vector(vec![Value::Vector(vec![Value::Integer(3)].arc())].arc())].arc()));
+    }
+
+    #[test]
+    fn test_write_json_integer() {
+        let v = Value::Integer(1001);
+        assert_eq!(write_json(&v), "1001");
+    }
+
+    #[test]
+    fn test_write_json_float() {
+        let v = Value::Float(1.25);
+        assert_eq!(write_json(&v), "1.25");
+    }
+
+    #[test]
+    fn test_write_json_vector() {
+        let v = Value::Vector(vec![Value::Integer(1), Value::Float(2.5), Value::Integer(3)].arc());
+        assert_eq!(write_json(&v), "[1, 2.5, 3]");
+    }
+
+    #[test]
+    fn test_write_json_nested_vector() {
+        let v = Value::Vector(
+            vec![ivec(vec![1, 2]),
+                 ivec(vec![3, 4]),
+                 Value::Vector(vec![ivec(vec![5, 6])].arc())].arc());
+        assert_eq!(write_json(&v), "[[1, 2], [3, 4], [[5, 6]]]");
     }
 }

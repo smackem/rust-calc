@@ -13,6 +13,7 @@ mod util;
 
 use std::collections::HashMap;
 use std::thread;
+use std::io::{ BufWriter, Write };
 use interpreter::Context;
 use lexer::Lexer;
 use util::Boxable;
@@ -148,6 +149,26 @@ impl Calculator {
         let it = RuntimeItem::Value(Value::Vector(its.arc()));
         self.ctx.put(IT_IDENT, it);
         self.ctx.get(IT_IDENT).unwrap()
+    }
+
+    /// Writes a JSON representation of the current calculator context into the specified
+    /// `BufWriter`, e.g. `{ "a": 100, "b": 200 }`.
+    /// This JSON representation only includes values, not functions.
+    pub fn write_json<T: Write>(&self, writer: &mut BufWriter<T>) -> ::std::io::Result<()> {
+        let item_tuples = {
+            let mut items = (*self.ctx).list();
+            items.sort_by_key(|&(ident, _)| ident);
+            items
+        };
+        try!(writer.write_all(b"{\n"));
+        for (ident, item) in item_tuples {
+            if let &RuntimeItem::Value(ref val) = item {
+                try!(write!(writer, "    \"{}\": ", &ident));
+                try!(val.write_json(writer));
+                try!(writer.write_all(b",\n"));
+            }
+        }
+        writer.write_all(b"}")
     }
 }
 

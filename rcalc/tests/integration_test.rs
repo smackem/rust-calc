@@ -1,6 +1,7 @@
 extern crate rcalc;
 
 use std::sync::Arc;
+use std::io::{ BufWriter };
 use rcalc::{ Calculator, RuntimeItem, Value };
 
 #[test]
@@ -110,4 +111,24 @@ fn test_calc_parallel_with_context_2() {
                Result::Ok(&RuntimeItem::Value(Value::Integer(2))));
     assert_eq!(calculator.calc("b"),
                Result::Ok(&RuntimeItem::Value(Value::Integer(4))));
+}
+
+//#[test]
+fn test_write_json() {
+    let mut calculator = Calculator::new();
+    assert!(calculator.calc("let one = 1").is_ok());
+    assert!(calculator.calc("let two = 2").is_ok());
+    assert!(calculator.calc("let vec = [1, 2]").is_ok());
+    assert_eq!(write_json(&calculator), "{\n    \"one\": 1,\n    \"two\": 2,\n    \"vec\": [1, 2],\n}");
+}
+
+// ============================================================================
+
+fn write_json(calculator: &Calculator) -> String {
+    let mut buf = Vec::new();
+    let _ = {
+        let mut writer = BufWriter::new(&mut buf);
+        assert!(calculator.write_json(&mut writer).is_ok());
+    };
+    String::from_utf8(buf).unwrap()
 }

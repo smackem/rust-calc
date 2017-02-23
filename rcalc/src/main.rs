@@ -1,7 +1,7 @@
 extern crate rcalc;
 
 use std::io;
-use std::io::Write;
+use std::io::{ BufWriter, Write };
 use rcalc::{ Calculator, RuntimeItem, Value };
 
 fn main() {
@@ -13,18 +13,7 @@ fn main() {
         print!("> ");
         io::stdout().flush().expect("stdout error");
 
-        let line: String = {
-            let mut buf = String::new();
-            match io::stdin().read_line(&mut buf) {
-                Ok(_) => buf,
-                Err(e) => {
-                    println!("{:?}", e);
-                    "".to_string()
-                },
-            }
-        };
-
-        match line.trim() {
+        match read_line().trim() {
             "" => (),
             "#q" => break,
             "#:" => {
@@ -39,6 +28,20 @@ fn main() {
                     print_item(item, &precision);
                 };
                 parallel_srcs = None;
+            },
+            "#j" => {
+                let mut buf = Vec::new();
+                let _ = {
+                    let mut writer = BufWriter::new(&mut buf);
+                    calculator.write_json(&mut writer).expect("json output error");
+                };
+                println!("{}", String::from_utf8(buf).unwrap());
+            },
+            "?" => {
+                println!("#q - quit rcalc");
+                println!("#: - enter or leave parallel mode");
+                println!("#! - leave parallel mode and evaluate all input concurrently");
+                println!("#j - print a JSON representation of the current values");
             },
             line if line.starts_with("#precision ") => {
                 if let Result::Ok(p) = line.split_whitespace().last().unwrap().parse::<usize>() {
@@ -62,6 +65,17 @@ fn main() {
     }
 }
 
+fn read_line() -> String {
+    let mut buf = String::new();
+    match io::stdin().read_line(&mut buf) {
+        Ok(_) => buf,
+        Err(e) => {
+            println!("{:?}", e);
+            "".to_string()
+        },
+    }
+}
+
 fn print_item(item: &RuntimeItem, precision: &Option<usize>) {
     if let &RuntimeItem::Value(ref v) = item {
         print_value(v, precision);
@@ -77,9 +91,6 @@ fn print_value(v: &Value, precision: &Option<usize>) {
             println!("  {:#x}", n);
             println!("  {:#b}", n);
         },
-        &Value::Vector(ref v) if (**v).len() > 1000 => {
-            println!("= vector with {} entries", (**v).len());
-        }
         _ => {
             match *precision {
                 Some(n) => println!("= {val:.prec$}", val = v, prec = n),

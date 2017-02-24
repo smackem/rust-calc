@@ -12,6 +12,8 @@ fn main() {
     let mut precision = None;
     let mut parallel_srcs = None;
 
+    println!("Enter ? for help");
+
     loop {
         print!("> ");
         io::stdout().flush().expect("stdout error");
@@ -50,8 +52,9 @@ fn main() {
                 println!("#q - quit rcalc");
                 println!("#: - enter or leave parallel mode");
                 println!("#! - leave parallel mode and evaluate all input concurrently");
-                println!("#j - print a JSON representation of the current values");
-                println!("#w - write a JSON representation of the current values to a file");
+                println!("#j - print a JSON representation of the current value bindings");
+                println!("#w - write a JSON representation of the current value bindings to '{}'", get_json_path());
+                println!("#precision <DIGITS> - format floating point values with <DIGITS> decimal places");
             },
             line if line.starts_with("#precision ") => {
                 if let Result::Ok(p) = line.split_whitespace().last().unwrap().parse::<usize>() {

@@ -317,6 +317,24 @@ impl Neg for Value {
     }
 }
 
+impl Not for Value {
+    type Output = Value;
+
+    /// The method for the unary `!` operator.
+    fn not(self) -> Value {
+        match self {
+            Value::Integer(n) => Value::Integer(!n),
+            Value::Float(f) => Value::Integer(!(f as i64)),
+            Value::Vector(ref v) => {
+                let resv: Vec<Value> = (*v).iter()
+                    .map(|val| val.clone().not())
+                    .collect();
+                Value::Vector(resv.arc())
+            },
+        }
+    }
+}
+
 impl PartialOrd for Value {
     fn partial_cmp(&self, other: &Value) -> Option<Ordering> {
         match (self, other) {

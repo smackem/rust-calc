@@ -76,6 +76,8 @@ pub fn eval_expr(expr: &Expr, ctx: &Context) -> Result<Value, String> {
             try!(eval_expr(&*left, ctx)).concat(&try!(eval_expr(&*right, ctx))),
         Expr::Neg(ref inner) =>
             -try!(eval_expr(&*inner, ctx)),
+        Expr::BitwiseNot(ref inner) =>
+            !try!(eval_expr(&*inner, ctx)),
         Expr::Sqrt(ref inner) =>
             try!(eval_expr(&*inner, ctx)).sqrt(),
         Expr::Sin(ref inner) =>

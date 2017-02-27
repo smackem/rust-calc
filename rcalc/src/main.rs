@@ -12,6 +12,8 @@ fn main() {
     let mut precision = None;
     let mut parallel_srcs = None;
 
+    println!("rust-calc v0.2");
+    println!("http://github.com/smackem/rust-calc");
     println!("Enter ? for help");
 
     loop {
@@ -49,14 +51,17 @@ fn main() {
                 };
             },
             "?" => {
-                println!("#q - quit rcalc");
                 println!("#: - enter or leave parallel mode");
                 println!("#! - leave parallel mode and evaluate all input concurrently");
                 println!("#j - print a JSON representation of the current value bindings");
                 println!("#w - write a JSON representation of the current value bindings to '{}'", get_json_path());
-                println!("#precision <DIGITS> - format floating point values with <DIGITS> decimal places");
+                println!("#p <DIGITS> - format floating point values with <DIGITS> decimal places");
+                println!("#q - quit rcalc");
+                println!("");
+                println!("anything else is parsed as a statement.");
+                println!("see http://github.com/smackem/rust-calc");
             },
-            line if line.starts_with("#precision ") => {
+            line if line.starts_with("#p ") => {
                 if let Result::Ok(p) = line.split_whitespace().last().unwrap().parse::<usize>() {
                     precision = Some(p);
                 } else {

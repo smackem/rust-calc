@@ -131,7 +131,7 @@ fn create_token_map() -> Vec<(Regex, Box<Fn(&str) -> Token>)> {
          (create_regex(r"^\s*dot\b"), Box::new(|_| Token::DotWord)),
          (create_regex(r"^\s*len\b"), Box::new(|_| Token::Len)),
          (create_regex(r"^\s*count\b"), Box::new(|_| Token::Count)),
-         (create_regex(r"^\s*[a-zA-Z]+"), Box::new(|s| Token::Ident(s.trim().to_string())))]
+         (create_regex(r"^\s*[a-zA-Z_][a-zA-Z0-9_]*\b"), Box::new(|s| Token::Ident(s.trim().to_string())))]
 }
 
 fn strip_string_from_index(s: &str, ch_to_remove: char, start_index: usize, buffer: &mut String) {
